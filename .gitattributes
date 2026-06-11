@@ -1,0 +1,4 @@
+tools-usage/brpc/* filter=lfs diff=lfs merge=lfs -text
+tools-usage/brpc/* text !filter !merge !diff
+tools-usage/brpc/client filter=lfs diff=lfs merge=lfs -text
+tools-usage/brpc/server filter=lfs diff=lfs merge=lfs -text
