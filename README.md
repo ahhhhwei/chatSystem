@@ -94,6 +94,7 @@ yum install gflags gflags-devel
    DEFINE_int32(log_level, 1, "日志等级：1-DEBUG, 2-WARN, 3-ERROR"); 
    DEFINE_string(log_file, "stdout", "日志输出位置设置，默认为标准输出");
    ```
+
    `gflags` 支持定义多种类型的宏函数：
 
    ```cpp
@@ -142,6 +143,201 @@ yum install gflags gflags-devel
    --version  # 打印版本信息，由 google::SetVersionString()设定
    --flagfile  -flagfile=f #从文件 f 中读取命令行参数 
    ```
+
    例如：
 
    ![help](./pic/help.png "help")
+
+### 3.2 gtest
+
+`gtest` 是一个跨平台的 `C++` 单元测试框架
+
+#### 3.2.1 gtest 的安装
+
+```shell
+um install gtest-devel
+```
+
+#### 3.2.2 gtest 的使用
+
+1. 包含头文件
+
+   ```cpp
+   #include <gtest/gtest.h>
+   ```
+2. 框架初始化
+
+   ```cpp
+   testing::InitGoogleTest(&argc, argv);
+   ```
+3. 调用测试样例
+
+   ```cpp
+   RUN_ALL_TESTS();
+   ```
+4. TEST 宏
+
+   ```cpp
+   TEST(测试名称, 测试样例名称)
+   TEST_F(test_fixture,test_name)
+   ```
+
+   1. TEST：主要用来创建一个简单测试，它定义了一个测试函数，在这个函数中可以使用任何C++代码并且使用框架提供的断言进行检查
+   2. TEST_F：主要用来进行多样测试，适用于多个测试场景如果需要相同的数据配置的情况，即相同的数据测不同的行为
+5. 断言宏
+
+   GTest 中的断言宏可以分为两类：
+
+   * `ASSERT_`系列：如果当前检测点失败，则直接退出当前测试用例函数
+   * `EXPECT_`系列：如果当前检测点失败，仅打印错误信息，继续向后执行剩余代码
+
+   ```cpp
+   // bool 值检查
+   ASSERT_TRUE(参数);  // 期待表达式结果为 true
+   ASSERT_FALSE(参数); // 期待表达式结果为 false
+
+   // 数值型数据检查
+   ASSERT_EQ(参数1, 参数2);  // equal，两个值相等才判定通过
+   ASSERT_NE(参数1, 参数2);  // not equal，两个值不相等才判定通过
+   ASSERT_LT(参数1, 参数2);  // less than，参数1 < 参数2 才判定通过
+   ASSERT_GT(参数1, 参数2);  // greater than，参数1 > 参数2 才判定通过
+   ASSERT_LE(参数1, 参数2);  // less equal，参数1 ≤ 参数2 才判定通过
+   ASSERT_GE(参数1, 参数2);  // greater equal，参数1 ≥ 参数2 才判定通过
+   ```
+
+示例：
+
+```cpp
+#include <gtest/gtest.h> 
+
+int Add(int a, int b) 
+{
+    return a + b;
+}
+int Sub(int a, int b) 
+{
+    return a - b;
+}
+// TEST(测试名称, 测试用例名称)
+TEST(MathTest, TestAdd) 
+{
+    EXPECT_EQ(Add(1,2), 3);
+    ASSERT_EQ(Add(-1, 1), 0);
+}
+
+TEST(MathTest, TestSub) 
+{
+    EXPECT_EQ(Sub(5,3), 2);
+    EXPECT_EQ(Sub(2,7), -5);
+}
+
+TEST(StrTest, StrCmp)
+{
+    std::string str = "ahwei";
+    ASSERT_EQ(str, "Ahwei");
+    ASSERT_EQ(str, "ahwei");
+}
+
+int main (int argc, char* argv[])
+{
+    // 单元测试框架的初始化
+    testing::InitGoogleTest(&argc, argv);
+    // 开始所有的单元测试
+    return RUN_ALL_TESTS(); 
+}
+```
+
+运行结果如下：
+![gtest](./pic/gtest.png)
+
+### 3.3 Spdlog
+
+高性能异步日志库
+
+> * 同步日志：调用打印日志的代码时，当前线程立即执行磁盘写入、控制台 IO 操作，IO 没写完，业务代码就卡在这里等着，不能继续往下跑；
+> * 异步日志：调用日志接口只把日志字符串丢进内存队列，立刻返回，业务线程马上继续执行业务逻辑。后台独立日志线程专门负责把队列里的日志批量写到文件或控制台，业务线程不用等待 IO。（生产者-消费者模型）
+
+#### 3.3.1 Spdlog 的安装
+
+```powershell
+yum install spdlog-devel
+```
+
+#### 3.3.2 Spdlog 的使用
+
+- 标准输出
+
+  ```cpp
+  #include <spdlog/spdlog.h>
+  #include <spdlog/sinks/stdout_color_sinks.h>
+  #include <iostream>
+  
+  int main()
+  {
+      // 设置全局的刷新策略
+      spdlog::flush_every(std::chrono::seconds(1));       // 每秒刷新
+      spdlog::flush_on(spdlog::level::level_enum::debug); // 遇到debug以上等级立即刷新
+      // 设置全局的日志输出等级（每个日志器还可以独立进行设置）
+      spdlog::set_level(spdlog::level::level_enum::debug);
+  
+      // 创建同步日志器（工厂接口默认创建的就是同步日志器）
+      auto logger = spdlog::stdout_color_mt("default-logger");       // 标准输出
+      // 设置日志器的刷新策略，以及日志器的输出等级
+      logger->flush_on(spdlog::level::level_enum::debug);
+      logger->set_level(spdlog::level::level_enum::debug);
+  
+      // 设置日志输出格式
+      logger->set_pattern("[%n][%H:%M:%S][%t][%-8l] %v"); // -8：格式化对齐规则：左对齐，固定占 8 个字符宽度
+      // 进行简单的日志输出
+      logger->trace("你好！{}", "ahwei");
+      logger->debug("你好！{}", "ahwei");
+      logger->info("你好！{}", "ahwei");
+      logger->warn("你好！{}", "ahwei");
+      logger->error("你好！{}", "ahwei");
+      logger->critical("你好！{}", "ahwei");
+      std::cout << "log done!" << std::endl;
+  
+      return 0;
+  }
+  ```
+
+  ![](./pic/sync_logger.png)
+
+- 输出到文件
+
+  ```cpp
+  #include <spdlog/spdlog.h>
+  #include <spdlog/sinks/stdout_color_sinks.h>
+  #include <spdlog/sinks/basic_file_sink.h>
+  #include <iostream>
+  
+  int main()
+  {
+      // 设置全局的刷新策略
+      spdlog::flush_every(std::chrono::seconds(1));       // 每秒刷新
+      spdlog::flush_on(spdlog::level::level_enum::debug); // 遇到debug以上等级立即刷新
+      // 设置全局的日志输出等级（每个日志器还可以独立进行设置）
+      spdlog::set_level(spdlog::level::level_enum::debug);
+  
+      // 创建同步日志器（工厂接口默认创建的就是同步日志器）
+      // auto logger = spdlog::stdout_color_mt("default-logger");       // 标准输出
+      auto logger = spdlog::basic_logger_mt("file-logger", "sync.log"); // 普通文件
+      // 设置日志器的刷新策略，以及日志器的输出等级
+      logger->flush_on(spdlog::level::level_enum::debug);
+      logger->set_level(spdlog::level::level_enum::debug);
+  
+      // 设置日志输出格式
+      logger->set_pattern("[%n][%H:%M:%S][%t][%-8l] %v"); // -8：格式化对齐规则：左对齐，固定占 8 个字符宽度
+      // 进行简单的日志输出
+      logger->trace("你好！{}", "ahwei");
+      logger->debug("你好！{}", "ahwei");
+      logger->info("你好！{}", "ahwei");
+      logger->warn("你好！{}", "ahwei");
+      logger->error("你好！{}", "ahwei");
+      logger->critical("你好！{}", "ahwei");
+      std::cout << "log done!" << std::endl;
+  
+      return 0;
+  }
+  ```
+  ![](./pic/log2file.png)
