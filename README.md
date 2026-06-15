@@ -271,7 +271,7 @@ yum install spdlog-devel
   #include <spdlog/spdlog.h>
   #include <spdlog/sinks/stdout_color_sinks.h>
   #include <iostream>
-  
+
   int main()
   {
       // 设置全局的刷新策略
@@ -279,13 +279,13 @@ yum install spdlog-devel
       spdlog::flush_on(spdlog::level::level_enum::debug); // 遇到debug以上等级立即刷新
       // 设置全局的日志输出等级（每个日志器还可以独立进行设置）
       spdlog::set_level(spdlog::level::level_enum::debug);
-  
+
       // 创建同步日志器（工厂接口默认创建的就是同步日志器）
       auto logger = spdlog::stdout_color_mt("default-logger");       // 标准输出
       // 设置日志器的刷新策略，以及日志器的输出等级
       logger->flush_on(spdlog::level::level_enum::debug);
       logger->set_level(spdlog::level::level_enum::debug);
-  
+
       // 设置日志输出格式
       logger->set_pattern("[%n][%H:%M:%S][%t][%-8l] %v"); // -8：格式化对齐规则：左对齐，固定占 8 个字符宽度
       // 进行简单的日志输出
@@ -296,13 +296,11 @@ yum install spdlog-devel
       logger->error("你好！{}", "ahwei");
       logger->critical("你好！{}", "ahwei");
       std::cout << "log done!" << std::endl;
-  
+
       return 0;
   }
   ```
-
-  ![](./pic/sync_logger.png)
-
+  ![img](./pic/sync_logger.png)
 - 输出到文件
 
   ```cpp
@@ -310,7 +308,7 @@ yum install spdlog-devel
   #include <spdlog/sinks/stdout_color_sinks.h>
   #include <spdlog/sinks/basic_file_sink.h>
   #include <iostream>
-  
+
   int main()
   {
       // 设置全局的刷新策略
@@ -318,14 +316,14 @@ yum install spdlog-devel
       spdlog::flush_on(spdlog::level::level_enum::debug); // 遇到debug以上等级立即刷新
       // 设置全局的日志输出等级（每个日志器还可以独立进行设置）
       spdlog::set_level(spdlog::level::level_enum::debug);
-  
+
       // 创建同步日志器（工厂接口默认创建的就是同步日志器）
       // auto logger = spdlog::stdout_color_mt("default-logger");       // 标准输出
       auto logger = spdlog::basic_logger_mt("file-logger", "sync.log"); // 普通文件
       // 设置日志器的刷新策略，以及日志器的输出等级
       logger->flush_on(spdlog::level::level_enum::debug);
       logger->set_level(spdlog::level::level_enum::debug);
-  
+
       // 设置日志输出格式
       logger->set_pattern("[%n][%H:%M:%S][%t][%-8l] %v"); // -8：格式化对齐规则：左对齐，固定占 8 个字符宽度
       // 进行简单的日志输出
@@ -336,8 +334,123 @@ yum install spdlog-devel
       logger->error("你好！{}", "ahwei");
       logger->critical("你好！{}", "ahwei");
       std::cout << "log done!" << std::endl;
-  
+
       return 0;
   }
   ```
-  ![](./pic/log2file.png)
+  ![img](./pic/log2file.png)
+- 异步工厂
+
+  ```cpp
+  #include <spdlog/spdlog.h>
+  #include <spdlog/sinks/stdout_color_sinks.h>
+  #include <spdlog/sinks/basic_file_sink.h>
+  #include <spdlog/async.h>
+  #include <iostream>
+
+  int main()
+  {
+      // 设置全局的刷新策略
+      spdlog::flush_every(std::chrono::seconds(1));       // 每秒刷新
+      spdlog::flush_on(spdlog::level::level_enum::debug); // 遇到debug以上等级立即刷新
+      // 设置全局的日志输出等级（每个日志器还可以独立进行设置）
+      spdlog::set_level(spdlog::level::level_enum::debug);
+
+      // 创建异步日志器
+      auto logger = spdlog::stdout_color_mt<spdlog::async_factory>("async-logger");       // 标准输出
+      // 设置日志器的刷新策略，以及日志器的输出等级
+      logger->flush_on(spdlog::level::level_enum::debug);
+      logger->set_level(spdlog::level::level_enum::debug);
+
+      // 设置日志输出格式
+      logger->set_pattern("[%n][%H:%M:%S][%t][%-8l] %v"); // -8：格式化对齐规则：左对齐，固定占 8 个字符宽度
+      // 进行简单的日志输出
+      logger->trace("你好！{}", "ahwei");
+      logger->debug("你好！{}", "ahwei");
+      logger->info("你好！{}", "ahwei");
+      logger->warn("你好！{}", "ahwei");
+      logger->error("你好！{}", "ahwei");
+      logger->critical("你好！{}", "ahwei");
+      std::cout << "log done!" << std::endl;
+
+      return 0;
+  }
+  ```
+  可以看到先输出日志打印完毕，后输出日志：
+
+  ![异步日志](./pic/async_logger.png)
+
+#### 3.3.3 Spdlog 的二次封装
+原因：
+1. 避免单例模式的锁冲突，因此直接创建全局的线程安全的日志器进行使用
+2. 因为日志输出没有文件名行号，因此使用宏进行二次封装输出日志的文件名和行号
+3. 封装一个初始化接口，便于使用：调试模式则输出到标准输出，否则输出到文件中
+思想：
+1. 封装一个全局接口，用户日志器的创建与初始化
+   - 初始化接口接收一个参数：运行模式-`bool`
+   - 初始化接口接收一个参数：输出文件名-用于发布模式
+   - 初始化接口接收一个参数：输出日志等级-用于发布模式
+2. 对日志输出的接口，进行宏的封装，加入文件名行号的输出
+
+logger.hpp:
+```cpp
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/async.h>
+#include <iostream>
+
+std::shared_ptr<spdlog::logger> g_default_logger;
+
+// mode - 运行模式： true-发布模式； false-调试模式
+void init_logger(bool mode, const std::string &file, int level) 
+{
+    // 如果是调试模式，则创建标准输出日志器，输出等级为最低
+    if (mode == false)
+    {
+        g_default_logger = spdlog::stdout_color_mt("default_logger");
+        g_default_logger->set_level(spdlog::level::level_enum::trace);
+        g_default_logger->flush_on(spdlog::level::level_enum::trace);
+    }
+    // 否则是发布模式，则创建文件输出日志器，输出等级根据参数而定
+    else
+    {
+        g_default_logger = spdlog::basic_logger_mt("default_logger", file);
+        g_default_logger->set_level((spdlog::level::level_enum)level);
+        g_default_logger->flush_on((spdlog::level::level_enum)level);
+    }
+    g_default_logger->set_pattern("[%n][%H:%M:%S][%t][%-8l]%v"); 
+}
+
+#define LOG_TRACE(format, ...) g_default_logger->trace(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_DEBUG(format, ...) g_default_logger->debug(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_INFO(format, ...) g_default_logger->info(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_WARN(format, ...) g_default_logger->warn(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_ERROR(format, ...) g_default_logger->error(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_FATAL(format, ...) g_default_logger->critical(std::string("[{}:{}] ") + format, __FILE__, __LINE__, ##__VA_ARGS__)
+```
+
+main.cc:
+```cpp
+#include "logger.hpp"
+#include <gflags/gflags.h>
+
+DEFINE_bool(run_mode, false, "程序的运行模式，false-调试；true-发布");
+DEFINE_string(log_file, "", "发布模式下，用于指定日志输出文件");
+DEFINE_int32(log_level, 0, "发布模式下，用于指定日志输出等级");
+int main(int argc, char* argv[])
+{
+    google::ParseCommandLineFlags(&argc, &argv, true);
+    init_logger(FLAGS_run_mode, FLAGS_log_file, FLAGS_log_level);
+
+    LOG_DEBUG("启动成功！");
+    LOG_INFO("用户名：{}", "ahwei");
+    LOG_WARN("用户名：{}，性别：{}", "ahwei", "男");
+    LOG_ERROR("hello: {}", "ahwei");
+    LOG_FATAL("hello: {}", "ahwei");
+
+    return 0;
+}
+```
+
+![](./pic/封装logger.png)

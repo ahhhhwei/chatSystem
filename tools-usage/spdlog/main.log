@@ -1,0 +1,3 @@
+[default_logger][15:59:41][919852][warning ][main.cc:14] 用户名：ahwei，性别：男
+[default_logger][15:59:41][919852][error   ][main.cc:15] hello: ahwei
+[default_logger][15:59:41][919852][critical][main.cc:16] hello: ahwei
