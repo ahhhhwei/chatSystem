@@ -70,7 +70,7 @@ gflags 是 Google 开源的 C++ 命令行参数解析库，专门用来给 C++ �
 #### 4.1.1 gflags 的安装
 
 ```shell
-yum install gflags gflags-devel
+apt-get install libgflags-dev
 ```
 
 > 1. 只在终端命令行执行软件：不管哪个系统，直接原名安装
@@ -155,7 +155,7 @@ yum install gflags gflags-devel
 #### 4.2.1 gtest 的安装
 
 ```shell
-um install gtest-devel
+apt-get install libgtest-dev
 ```
 
 #### 4.2.2 gtest 的使用
@@ -260,7 +260,7 @@ int main (int argc, char* argv[])
 #### 4.3.1 Spdlog 的安装
 
 ```powershell
-yum install spdlog-devel
+apt-get install libgtest-dev
 ```
 
 #### 4.3.2 Spdlog 的使用
@@ -496,7 +496,9 @@ Etcd 是一个分布式、高可用的一致性键值存储系统，用于配置
    ```
 
    > 开启的时候我这里报错了：
+   >
    > ![img](./pic/etcd-error.png)
+   >
    > 这个报错的意思是：etcd 二进制已经安装了，但系统里没有注册 etcd.service，所以 systemctl start etcd 找不到服务单元。
    > 可以先确认路径：`which etcd`
    > 输出是 `/usr/local/bin/etcd`，可以手动创建 systemd 服务：
@@ -534,7 +536,7 @@ Etcd 是一个分布式、高可用的一致性键值存储系统，用于配置
 3. 设置 Etcd 开机自启：
 
    ```bash
-   sudo systemctl enable etcd
+   systemctl enable etcd
    ```
 4. 运行验证：
 
@@ -553,6 +555,15 @@ Etcd 是一个分布式、高可用的一致性键值存储系统，用于配置
 3. 健康检查：服务定期向 Etcd 发送心跳，以维持其注册信息的有效性
 
 etcd 采用 golang 编写， v3 版本通信采用 grpc API，即（HTTP2 + protobuf），官方只维护了 go 语言版本的 client 库，因此需要找到 C/C++ 非官方的 client 开发库 `etcd-cpp-apiv3`
+
+```bash
+git clone https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3.git 
+cd etcd-cpp-apiv3 
+mkdir build && cd build 
+ 
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr 
+make -j$(nproc) && sudo make install 
+```
 
 ### 4.5 brpc
 
