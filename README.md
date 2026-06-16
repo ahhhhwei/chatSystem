@@ -61,13 +61,13 @@
 11. **服务发现**：服务实例可能动态变化，需要服务发现机制来动态地找到服务实例。
 12. **安全**：每个服务需要考虑安全问题，包括认证、授权和数据传输的安全性。
 
-## 三、环境搭建
+## 四、环境搭建
 
-### 3.1 gflags
+### 4.1 gflags
 
 gflags 是 Google 开源的 C++ 命令行参数解析库，专门用来给 C++ 程序灵活解析启动命令行参数，替代 C 语言原生 argc/argv 手动解析参数的繁琐写法。
 
-#### 3.1.1 gflags 的安装
+#### 4.1.1 gflags 的安装
 
 ```shell
 yum install gflags gflags-devel
@@ -79,7 +79,7 @@ yum install gflags gflags-devel
 >    1. Ubuntu：包名 = `lib库名-dev`
 >    2. CentOS：包名 = `库名-devel`
 
-#### 3.1.2 gflags 的使用
+#### 4.1.2 gflags 的使用
 
 1. 包含头文件
 
@@ -148,17 +148,17 @@ yum install gflags gflags-devel
 
    ![help](./pic/help.png "help")
 
-### 3.2 gtest
+### 4.2 gtest
 
 `gtest` 是一个跨平台的 `C++` 单元测试框架
 
-#### 3.2.1 gtest 的安装
+#### 4.2.1 gtest 的安装
 
 ```shell
 um install gtest-devel
 ```
 
-#### 3.2.2 gtest 的使用
+#### 4.2.2 gtest 的使用
 
 1. 包含头文件
 
@@ -250,20 +250,20 @@ int main (int argc, char* argv[])
 运行结果如下：
 ![gtest](./pic/gtest.png)
 
-### 3.3 Spdlog
+### 4.3 Spdlog
 
 高性能异步日志库
 
 > * 同步日志：调用打印日志的代码时，当前线程立即执行磁盘写入、控制台 IO 操作，IO 没写完，业务代码就卡在这里等着，不能继续往下跑；
 > * 异步日志：调用日志接口只把日志字符串丢进内存队列，立刻返回，业务线程马上继续执行业务逻辑。后台独立日志线程专门负责把队列里的日志批量写到文件或控制台，业务线程不用等待 IO。（生产者-消费者模型）
 
-#### 3.3.1 Spdlog 的安装
+#### 4.3.1 Spdlog 的安装
 
 ```powershell
 yum install spdlog-devel
 ```
 
-#### 3.3.2 Spdlog 的使用
+#### 4.3.2 Spdlog 的使用
 
 - 标准输出
 
@@ -300,6 +300,7 @@ yum install spdlog-devel
       return 0;
   }
   ```
+
   ![img](./pic/sync_logger.png)
 - 输出到文件
 
@@ -338,6 +339,7 @@ yum install spdlog-devel
       return 0;
   }
   ```
+
   ![img](./pic/log2file.png)
 - 异步工厂
 
@@ -376,23 +378,27 @@ yum install spdlog-devel
       return 0;
   }
   ```
+
   可以看到先输出日志打印完毕，后输出日志：
 
   ![异步日志](./pic/async_logger.png)
 
-#### 3.3.3 Spdlog 的二次封装
+#### 4.3.3 Spdlog 的二次封装
+
 原因：
+
 1. 避免单例模式的锁冲突，因此直接创建全局的线程安全的日志器进行使用
 2. 因为日志输出没有文件名行号，因此使用宏进行二次封装输出日志的文件名和行号
 3. 封装一个初始化接口，便于使用：调试模式则输出到标准输出，否则输出到文件中
-思想：
-1. 封装一个全局接口，用户日志器的创建与初始化
+   思想：
+4. 封装一个全局接口，用户日志器的创建与初始化
    - 初始化接口接收一个参数：运行模式-`bool`
    - 初始化接口接收一个参数：输出文件名-用于发布模式
    - 初始化接口接收一个参数：输出日志等级-用于发布模式
-2. 对日志输出的接口，进行宏的封装，加入文件名行号的输出
+5. 对日志输出的接口，进行宏的封装，加入文件名行号的输出
 
 logger.hpp:
+
 ```cpp
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -431,6 +437,7 @@ void init_logger(bool mode, const std::string &file, int level)
 ```
 
 main.cc:
+
 ```cpp
 #include "logger.hpp"
 #include <gflags/gflags.h>
@@ -454,3 +461,115 @@ int main(int argc, char* argv[])
 ```
 
 ![](./pic/封装logger.png)
+
+### 4.4 etcd
+
+Etcd 是一个分布式、高可用的一致性键值存储系统，用于配置共享和服务发现等。使用 Raft 一致性算法来保持集群数据的一致性，且客户端通过长连接 watch 功能，能够及时收到数据变化通知。
+
+- Lease 租约 + KeepAlive 心跳：实现临时节点自动清理，服务宕机自动注销注册信息；
+- 分布式锁：基于 CAS 原子事务实现，搭配租约避免死锁；
+- 事务、版本控制：支持条件原子写入、历史数据回滚。
+
+#### 4.4.1 etcd 的安装
+
+1. 安装
+
+   ```bash
+   # 1. 下载etcd 3.5.21 amd64
+   wget https://github.com/etcd-io/etcd/releases/download/v3.5.21/etcd-v3.5.21-linux-amd64.tar.gz
+
+   # 2. 解压
+   tar -zxvf etcd-v3.5.21-linux-amd64.tar.gz -C /usr/local/
+
+   # 3. 把二进制放入系统PATH
+   cd /usr/local/etcd-v3.5.21-linux-amd64
+   cp etcd etcdctl /usr/local/bin/
+
+   # 4. 验证安装
+   etcd --version
+   etcdctl version
+   ```
+2. 启动 Etcd 服务：
+
+   ```bash
+   systemctl start etcd
+   ```
+
+   > 开启的时候我这里报错了：
+   > ![img](./pic/etcd-error.png)
+   > 这个报错的意思是：etcd 二进制已经安装了，但系统里没有注册 etcd.service，所以 systemctl start etcd 找不到服务单元。
+   > 可以先确认路径：`which etcd`
+   > 输出是 `/usr/local/bin/etcd`，可以手动创建 systemd 服务：
+   >
+   > ```
+   > mkdir -p /var/lib/etcd
+   >
+   > cat >/etc/systemd/system/etcd.service <<'EOF'
+   > [Unit]
+   > Description=etcd key-value store
+   > Documentation=https://etcd.io/docs/
+   > After=network-online.target
+   > Wants=network-online.target
+   >
+   > [Service]
+   > Type=notify
+   > ExecStart=/usr/local/bin/etcd \
+   >   --name default \
+   >   --data-dir /var/lib/etcd \
+   >   --listen-client-urls http://0.0.0.0:2379 \
+   >   --advertise-client-urls http://127.0.0.1:2379 \
+   >   --listen-peer-urls http://127.0.0.1:2380 \
+   >   --initial-advertise-peer-urls http://127.0.0.1:2380 \
+   >   --initial-cluster default=http://127.0.0.1:2380 \
+   >   --initial-cluster-state new
+   > Restart=always
+   > RestartSec=5
+   > LimitNOFILE=40000
+   >
+   > [Install]
+   > WantedBy=multi-user.target
+   > EOF
+   > ```
+   >
+3. 设置 Etcd 开机自启：
+
+   ```bash
+   sudo systemctl enable etcd
+   ```
+4. 运行验证：
+
+   ```bash
+   etcdctl put mykey "wjw" 
+   etcdctl get mykey
+   etcdctl del mykey
+   ```
+
+#### 4.4.2 搭建服务注册发现中心
+
+使用 Etcd 作为服务注册发现中心，需要定义服务的注册和发现逻辑，这通常涉及到以下几个操作：
+
+1. 服务注册：服务启动时，向 Etcd 注册自己的地址和端口
+2. 服务发现：客户端通过 Etcd 获取服务的地址和窗口，用于远程调试
+3. 健康检查：服务定期向 Etcd 发送心跳，以维持其注册信息的有效性
+
+etcd 采用 golang 编写， v3 版本通信采用 grpc API，即（HTTP2 + protobuf），官方只维护了 go 语言版本的 client 库，因此需要找到 C/C++ 非官方的 client 开发库 `etcd-cpp-apiv3`
+
+### 4.5 brpc
+
+### 4.6 es
+
+### 4.7 httplib
+
+### 4.8 websocketpp
+
+### 4.9  redis
+
+### 4.10 ODB
+
+### 4.11 RabbitMQ
+
+### 4.12 DMS
+
+### 4.13 语音平台
+
+### 4.14 cmake
