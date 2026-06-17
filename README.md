@@ -470,6 +470,20 @@ Etcd 是一个分布式、高可用的一致性键值存储系统，用于配置
 - 分布式锁：基于 CAS 原子事务实现，搭配租约避免死锁；
 - 事务、版本控制：支持条件原子写入、历史数据回滚。
 
+> 长连接：客户端和服务器建立一次 `TCP` 连接后，不马上断开，而是把这条连接保持一段时间，后续多次请求或数据传输都复用同一条连接。
+> - 短连接：每次通信都要 `建立连接 -> 传输数据 -> 断开连接`
+> - 长连接：一次建立连接后，多次传数据，空闲时暂时保持连接
+> 它的优点是：减少频繁三次握手和四次挥手的开销；降低延迟；适合频繁通信、实时通信场景
+> 他的缺点是：服务器要长期维护连接，占用文件描述符、内存等资源；连接空闲太久可能被防火墙、NAT、负载均衡器断掉；通常需要心跳机制来检测连接是否还或者
+
+> 心跳：定期确认对方还活着，如果连续几次没回应，就认为连接断了，然后重连
+
+> 租约：`key + TTL`。租约是 etcd 里的概念。比如给 `/chat/gateway/1` 绑定一个 10 秒租约，如果 10 秒内没有续租，`etcd` 会自动删除这个 `key`。
+
+> ```
+> 客户端 <--WebSocket 心跳--> 聊天服务器 <--租约 keepalive--> etcd
+> ```
+
 #### 4.4.1 etcd 的安装
 
 1. 安装
@@ -563,6 +577,182 @@ mkdir build && cd build
  
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr 
 make -j$(nproc) && sudo make install 
+```
+
+#### 4.4.3 etcd 的二次封装
+
+[代码位于](./tools-usage/etcd)
+
+![](./pic/etcd.gif)
+
+封装 `etcd-cpp-apiv3`，实现两种类型的客户端
+1. 服务注册客户端：向服务器新增服务信息数据，并进行保活
+2. 服务发现客户端：从服务器查找服务信息数据，并进行改变事件监控
+
+> 保活：不断告诉 `etcd`，这个租约还活着，不要把他绑定的 `key` 删除
+>
+> ```cpp
+> auto keep_alive = client.leasekeepalive(3).get();
+> auto lease_id = keep_alive->Lease();
+> client.put("/service/user", "127.0.0.1:8080", lease_id).get();
+> ```
+> 意思是：这个 `/service/user` 不是永久 `key`，它绑定到了一个 3 秒租约上。如果没有保活，那么 3 秒后 `etcd` 会自动删除这个 `key`。但 `leasekeepalive(3)` 会在后台持续续约
+
+封装思想：
+1. 封装服务注册客户端类 `Registry`：把当前服务注册到 `etcd`
+   提供一个接口：向服务器新增数据并进行保活
+   参数：注册中心地址（`etcd` 服务器地址），新增的服务信息（服务名-主机键值对）
+
+2. 封装服务发现客户端类`Discovery`：从 `etcd` 发现服务，并监听服务上下线
+   提供两个设置回调函数的接口：服务上线事件接口（新增数据），服务下线事件接口（数据删除）
+   提供一个设置根目录的接口：用于获取指定目录下的数据以及监控目录下数据的改变
+
+`Registry`：服务注册
+
+```cpp
+Registry(const std::string &host)
+    : _client(std::make_shared<etcd::Client>(host)),
+      _keep_alive(_client->leasekeepalive(3).get()),
+      _lease_id(_keep_alive->Lease()) {}
+```
+
+- `_client = etcd 客户端`
+- 连接 etcd，比如：`http://127.0.0.1:2379`
+- `_keep_alive = 创建一个 3 秒续约一次的租约`
+
+etcd 里的 key 可以绑定租约。租约一直续期，key 就一直存在；进程挂了，续约停止，key 过期后自动删除。
+```cpp
+_lease_id = 拿到这个租约 id
+```
+
+注册服务：
+```cpp
+bool registry(const std::string &key, const std::string &val)
+{
+    auto resp = _client->put(key, val, _lease_id).get();
+```
+注册服务是把一条数据写入 `etcd`
+
+```
+key = /service/user/instance1
+val = 127.0.0.1:8080
+lease = _lease_id
+```
+
+所以 `etcd` 中存的是：
+
+```cpp
+/service/user/instance1 -> 127.0.0.1:8080
+```
+并且这条数据绑定了租约。如果服务程序退出，析构函数执行：
+
+```cpp
+~Registry() { _keep_alive->Cancel(); }
+```
+
+取消续约，过一会儿 etcd 会自动删除这个服务节点。
+
+`Discovery`：服务发现
+
+构造函数：
+```cpp
+Discovery(host, basedir, put_cb, del_cb)
+// host      etcd 地址
+// basedir   要监听的服务根目录，比如 /service
+// put_cb    有服务上线时调用的函数
+// del_cb    有服务下线时调用的函数
+```
+
+先获取当前已经存在的服务：
+
+```cpp
+auto resp = _client->ls(basedir).get();
+```
+
+比如 `etcd` 当前有：
+```text
+/service/user/instance1 -> 127.0.0.1:8080
+/service/order/instance1 -> 127.0.0.1:8081
+```
+
+然后遍历：
+
+```cpp
+for (int i = 0; i < sz; ++i)
+{
+    if (_put_cb)
+        _put_cb(resp.key(i), resp.value(i).as_string());
+}
+```
+
+等价于：把当前已有服务都当作“上线服务”通知一遍。
+
+接着创建 `watcher`：监听 `basedir` 目录下的变化，比如 `/service`。
+
+```cpp
+_watcher = std::make_shared<etcd::Watcher>(
+    *_client.get(),
+    basedir,
+    std::bind(&Discovery::callback, this, std::placeholders::_1),
+    true
+);
+```
+
+只要 etcd 里发生：
+
+```text
+新增 key
+修改 key
+删除 key
+```
+
+就调用：
+```cpp
+Discovery::callback(...)
+```
+最后一个 `true` 一般表示递归监听，也就是 `/service` 下面的子路径也会监听到。
+
+`callback`：处理服务上下线
+
+```cpp
+void callback(const etcd::Response &resp)
+```
+每次 `etcd` 有事件通知时，会进入这个函数。
+如果是 `PUT`：
+```cpp
+if (ev.event_type() == etcd::Event::EventType::PUT)
+{
+    _put_cb(ev.kv().key(), ev.kv().as_string());
+}
+```
+表示有服务上线或服务信息更新。
+
+比如注册端写入：
+```cpp
+/service/user/instance1 -> 127.0.0.1:8080
+```
+
+发现端就会调用：
+```cpp
+online("/service/user/instance1", "127.0.0.1:8080");
+```
+
+如果是 `DELETE`：
+```cpp
+else if (ev.event_type() == etcd::Event::EventType::DELETE_)
+{
+    _del_cb(ev.prev_kv().key(), ev.prev_kv().as_string());
+}
+```
+
+表示服务下线。比如注册程序退出，租约过期，`etcd` 删除：
+```cpp
+/service/user/instance1
+```
+
+发现端就会调用：
+```cpp
+offline("/service/user/instance1", "127.0.0.1:8080");
 ```
 
 ### 4.5 brpc
