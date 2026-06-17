@@ -6,6 +6,7 @@
 #include "../spdlog/logger.hpp"
 
 // 服务注册客户端类
+// 连接 etcd -> 创建租约 -> 写入服务地址 -> 自动续约
 class Registry
 {
 public:
@@ -32,6 +33,7 @@ private:
 };
 
 // 服务发现客户端类
+// 连接 etcd -> 读取已有服务 -> 监听服务变化 -> 调用回调函数
 class Discovery
 {
 public:
@@ -58,6 +60,11 @@ public:
         // 然后进行事件监控，监控数据发生的改变并调用回调进行处理
         _watcher = std::make_shared<etcd::Watcher>(*_client.get(), basedir,
                                                    std::bind(&Discovery::callback, this, std::placeholders::_1), true);
+        // 这里包裹一层 bind，不能直接写 callback。因为成员函数必须依靠对象。等价于如下 lambda 表达式
+        // [this](const etcd::Response &resp)
+        // {
+        //     this->callback(resp);
+        // }
     }
     ~Discovery()
     {
