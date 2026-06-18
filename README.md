@@ -471,10 +471,11 @@ Etcd 是一个分布式、高可用的一致性键值存储系统，用于配置
 - 事务、版本控制：支持条件原子写入、历史数据回滚。
 
 > 长连接：客户端和服务器建立一次 `TCP` 连接后，不马上断开，而是把这条连接保持一段时间，后续多次请求或数据传输都复用同一条连接。
+>
 > - 短连接：每次通信都要 `建立连接 -> 传输数据 -> 断开连接`
 > - 长连接：一次建立连接后，多次传数据，空闲时暂时保持连接
-> 它的优点是：减少频繁三次握手和四次挥手的开销；降低延迟；适合频繁通信、实时通信场景
-> 他的缺点是：服务器要长期维护连接，占用文件描述符、内存等资源；连接空闲太久可能被防火墙、NAT、负载均衡器断掉；通常需要心跳机制来检测连接是否还或者
+>   它的优点是：减少频繁三次握手和四次挥手的开销；降低延迟；适合频繁通信、实时通信场景
+>   他的缺点是：服务器要长期维护连接，占用文件描述符、内存等资源；连接空闲太久可能被防火墙、NAT、负载均衡器断掉；通常需要心跳机制来检测连接是否还或者
 
 > 心跳：定期确认对方还活着，如果连续几次没回应，就认为连接断了，然后重连
 
@@ -586,6 +587,7 @@ make -j$(nproc) && sudo make install
 ![](./pic/etcd.gif)
 
 封装 `etcd-cpp-apiv3`，实现两种类型的客户端
+
 1. 服务注册客户端：向服务器新增服务信息数据，并进行保活
 2. 服务发现客户端：从服务器查找服务信息数据，并进行改变事件监控
 
@@ -596,14 +598,15 @@ make -j$(nproc) && sudo make install
 > auto lease_id = keep_alive->Lease();
 > client.put("/service/user", "127.0.0.1:8080", lease_id).get();
 > ```
+>
 > 意思是：这个 `/service/user` 不是永久 `key`，它绑定到了一个 3 秒租约上。如果没有保活，那么 3 秒后 `etcd` 会自动删除这个 `key`。但 `leasekeepalive(3)` 会在后台持续续约
 
 封装思想：
+
 1. 封装服务注册客户端类 `Registry`：把当前服务注册到 `etcd`
    提供一个接口：向服务器新增数据并进行保活
    参数：注册中心地址（`etcd` 服务器地址），新增的服务信息（服务名-主机键值对）
-
-2. 封装服务发现客户端类`Discovery`：从 `etcd` 发现服务，并监听服务上下线
+2. 封装服务发现客户端类 `Discovery`：从 `etcd` 发现服务，并监听服务上下线
    提供两个设置回调函数的接口：服务上线事件接口（新增数据），服务下线事件接口（数据删除）
    提供一个设置根目录的接口：用于获取指定目录下的数据以及监控目录下数据的改变
 
@@ -621,16 +624,19 @@ Registry(const std::string &host)
 - `_keep_alive = 创建一个 3 秒续约一次的租约`
 
 etcd 里的 key 可以绑定租约。租约一直续期，key 就一直存在；进程挂了，续约停止，key 过期后自动删除。
+
 ```cpp
 _lease_id = 拿到这个租约 id
 ```
 
 注册服务：
+
 ```cpp
 bool registry(const std::string &key, const std::string &val)
 {
     auto resp = _client->put(key, val, _lease_id).get();
 ```
+
 注册服务是把一条数据写入 `etcd`
 
 ```
@@ -644,6 +650,7 @@ lease = _lease_id
 ```cpp
 /service/user/instance1 -> 127.0.0.1:8080
 ```
+
 并且这条数据绑定了租约。如果服务程序退出，析构函数执行：
 
 ```cpp
@@ -655,6 +662,7 @@ lease = _lease_id
 `Discovery`：服务发现
 
 构造函数：
+
 ```cpp
 Discovery(host, basedir, put_cb, del_cb)
 // host      etcd 地址
@@ -670,6 +678,7 @@ auto resp = _client->ls(basedir).get();
 ```
 
 比如 `etcd` 当前有：
+
 ```text
 /service/user/instance1 -> 127.0.0.1:8080
 /service/order/instance1 -> 127.0.0.1:8081
@@ -707,9 +716,11 @@ _watcher = std::make_shared<etcd::Watcher>(
 ```
 
 就调用：
+
 ```cpp
 Discovery::callback(...)
 ```
+
 最后一个 `true` 一般表示递归监听，也就是 `/service` 下面的子路径也会监听到。
 
 `callback`：处理服务上下线
@@ -717,27 +728,33 @@ Discovery::callback(...)
 ```cpp
 void callback(const etcd::Response &resp)
 ```
+
 每次 `etcd` 有事件通知时，会进入这个函数。
 如果是 `PUT`：
+
 ```cpp
 if (ev.event_type() == etcd::Event::EventType::PUT)
 {
     _put_cb(ev.kv().key(), ev.kv().as_string());
 }
 ```
+
 表示有服务上线或服务信息更新。
 
 比如注册端写入：
+
 ```cpp
 /service/user/instance1 -> 127.0.0.1:8080
 ```
 
 发现端就会调用：
+
 ```cpp
 online("/service/user/instance1", "127.0.0.1:8080");
 ```
 
 如果是 `DELETE`：
+
 ```cpp
 else if (ev.event_type() == etcd::Event::EventType::DELETE_)
 {
@@ -746,16 +763,226 @@ else if (ev.event_type() == etcd::Event::EventType::DELETE_)
 ```
 
 表示服务下线。比如注册程序退出，租约过期，`etcd` 删除：
+
 ```cpp
 /service/user/instance1
 ```
 
 发现端就会调用：
+
 ```cpp
 offline("/service/user/instance1", "127.0.0.1:8080");
 ```
 
 ### 4.5 brpc
+
+brpc 是用 C++ 语言编写的工业级 PRC 框架，常用于搜索、存储、机器学习、广告、推荐等高性能系统。
+
+rpc 是一个远程调用框架，以加法计算为例，以前都是将数据处理过程直接在本地封装实现：
+
+```cpp
+int Add (int num1, int num2)
+{
+   return num1 + num2;
+}
+```
+
+而 rpc 框架远程调用思想不一样，它将数据处理过程交给服务器来进行：
+
+![rpc框架](./pic/rpc框架.svg)
+
+#### 4.5.1 brpc 的安装
+
+安装系统依赖：
+```bash
+apt-get install -y git g++ make libssl-dev libprotobuf-dev libprotoc-dev protobuf-compiler libleveldb-dev
+```
+
+编译安装 brpc：
+```bash
+git clone https://github.com/apache/brpc.git
+cd brpc
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr .. && cmake --build . -j6
+make && make install
+```
+
+#### 4.5.2 brpc 类与接口的说明
+##### 4.5.2.1 日志输出类
+
+头文件：`#include <butil/logging.h>`
+
+```cpp
+namespace logging
+{
+    // 我们并不需要它自带的日志输出，所以这里要关闭日志
+    enum LoggingDestination
+    {
+        LOG_TO_NONE = 0
+    };
+    struct BUTIL_EXPORT LoggingSettings
+    {
+        LoggingSettings();
+        LoggingDestination logging_dest;
+    };
+    // 初始化日志配置
+    bool InitLogging(const LoggingSettings &settings);
+}
+```
+
+##### 4.5.2.2 Protobuf 基础接口
+
+```proto
+syntax="proto3"; // proto 版本
+
+package example; // 声明命名空间（由 protobuf 生成的代码可能会和其他代码冲突，比如类名，这里 package 就是最后 C++ 的命名空间
+
+option cc_generic_services = true; // 为 service 生成 C++ 服务类代码。
+
+// 类似于 C++ 中的结构体，字段编号1是 protobuf 序列化时用的字段标识。网络传输时 protobuf 不直接靠字段名找数据，而是靠这个编号。
+message EchoRequest {
+    string message = 1;
+}
+
+message EchoResponse {
+    string message = 1;
+}
+
+// 定义了一个 PRC 服务，理解为 C++ 里的抽象类
+// class EchoService {
+// public:
+//     virtual EchoResponse Echo(EchoRequest request) = 0;
+// };
+service EchoService {
+    rpc Echo(EchoRequest) returns (EchoResponse);
+}
+```
+
+然后执行以下命令生成 [`main.pb.cc`](./tools-usage/brpc/main.pb.cc) 和 [`main.pb.h`](./tools-usage/brpc/main.pb.h) 两个文件。
+```bash
+protoc --cpp_out=./ main.proto 
+```
+
+##### 4.5.2.3 服务端核心类
+```cpp
+namespace brpc {
+// 服务配置项
+struct ServerOptions {
+    // 空闲连接超时，-1代表不关闭
+    int idle_timeout_sec;
+    // 工作线程数，默认等于CPU核心数
+    int num_threads;
+};
+
+// 服务所有权枚举
+enum ServiceOwnership {
+    // 服务销毁由Server管理
+    SERVER_OWNS_SERVICE,
+    // 外部自行管理服务对象生命周期
+    SERVER_DOESNT_OWN_SERVICE
+};
+
+// 服务主类
+class Server {
+    // 注册服务
+    int AddService(google::protobuf::Service* service, ServiceOwnership ownership);
+    // 启动服务，监听端口
+    int Start(int port, const ServerOptions* opt);
+    // 停止服务
+    int Stop(int closewait_ms);
+    // 等待服务退出
+    int Join();
+    // 阻塞运行，直到收到退出信号
+    void RunUntilAskedToQuit();
+};
+
+// 自动执行done->Run的RAII守卫
+class ClosureGuard {
+    explicit ClosureGuard(google::protobuf::Closure* done);
+    ~ClosureGuard() { if (_done) _done->Run(); }
+};
+
+// HTTP头部封装
+class HttpHeader {
+    void set_content_type(const std::string& type);
+    const std::string* GetHeader(const std::string& key);
+    void SetHeader(const std::string& key, const std::string& value);
+    const URI& uri() const;
+    HttpMethod method() const;
+    void set_method(const HttpMethod method);
+    int status_code();
+    void set_status_code(int status_code);
+};
+
+// RPC控制器（扩展原生protobuf Controller）
+class Controller : public google::protobuf::RpcController {
+    // 设置请求超时ms
+    void set_timeout_ms(int64_t timeout_ms);
+    // 设置最大重试次数
+    void set_max_retry(int max_retry);
+    google::protobuf::Message* response();
+    HttpHeader& http_response();
+    HttpHeader& http_request();
+    bool Failed();
+    std::string ErrorText();
+
+    // RPC响应完成后的后置回调
+    using AfterRpcRespFnType = std::function<void(Controller* cntl, const google::protobuf::Message* req, const google::protobuf::Message* res)>;
+    void set_after_rpc_resp_fn(AfterRpcRespFnType&& fn);
+};
+}
+```
+
+##### 4.5.2.4 客户端核心类
+```cpp
+namespace brpc {
+// Channel通道配置
+struct ChannelOptions {
+    // 连接超时ms，默认200
+    int32_t connect_timeout_ms;
+    // RPC请求超时ms，默认500
+    int32_t timeout_ms;
+    // 最大重试次数，默认3
+    int max_retry;
+    // 协议类型，默认baidu_std
+    AdaptiveProtocolType protocol;
+};
+
+// 通信通道
+class Channel : public ChannelBase {
+    // 初始化通道，传入服务地址+端口
+    int Init(const char* server_addr_and_port, const ChannelOptions* options);
+};
+}
+```
+
+#### 4.5.3 RPC 调用实现样例
+[服务端：](./tools-usage/brpc/server.cc)
+1. 创建 rpc 服务子类继承 pb 中的 EchoService 服务类，并实现内部的业务接口逻辑
+2. 创建 rpc 服务器类，搭建服务器 
+3. 向服务器类中添加 rpc 子服务对象，告诉服务器收到什么请求用哪个接口处理
+4. 启动服务器
+
+[客户端：](./tools-usage/brpc/client.cc)
+1. 创建网络通信信道
+2. 实例化 pb 中的 Echo_Service_Stub 类对象
+3. 发起 rpc 请求，获取响应进行处理
+
+
+![rpc](./pic/rpc.gif)
+
+#### 4.5.4 brpc 二次封装
+brpc 本质上来说是 rpc 调用，但是向谁调用什么服务得管理起来——搭配 etcd 实现注册中心管理（通过注册中心，能够获知谁能提供什么服务，进而能够连接它发起这个服务调用）
+
+封装思想：主要是管理起来网络通信的信道——将不同服务节点主机的通信信道管理起来。封装的是服务节点信道的管理，而不是 rpc 调用的管理
+
+封装：
+
+1. 指定服务的信道管理类：
+   - 一个服务可能会有多个节点提供服务，每个节点都有自己的 channel
+   - 建立服务与信道的映射关系，并且关系是一对多，采用 RR 轮转策略进行获取
+2. 总体的服务信道管理类
+   - 将
 
 ### 4.6 es
 

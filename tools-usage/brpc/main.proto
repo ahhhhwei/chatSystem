@@ -1,0 +1,24 @@
+syntax="proto3"; // proto 版本
+
+package example; // 声明命名空间（由 protobuf 生成的代码可能会和其他代码冲突，比如类名，这里 package 就是最后 C++ 的命名空间
+
+option cc_generic_services = true; // 为 service 生成 C++ 服务类代码。
+
+// 类似于 C++ 中的结构体，字段编号1是 protobuf 序列化时用的字段标识。网络传输时 protobuf 不直接靠字段名找数据，而是靠这个编号。
+message EchoRequest {
+    string message = 1;
+}
+
+message EchoResponse {
+    string message = 1;
+}
+
+// 定义了一个 PRC 服务，理解为 C++ 里的抽象类
+// class EchoService {
+// public:
+//     virtual EchoResponse Echo(EchoRequest request) = 0;
+// };
+service EchoService {
+    rpc Echo(EchoRequest) returns (EchoResponse);
+}
+// 它生成的 Echo 函数，给服务端继承，来实现真正的业务逻辑；给客户端使用，用来发起远程调用
