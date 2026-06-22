@@ -984,7 +984,29 @@ brpc 本质上来说是 rpc 调用，但是向谁调用什么服务得管理起�
 2. 总体的服务信道管理类
    - 将
 
+#### 4.5.5 brpc 和 etcd 联调
+
+
 ### 4.6 es
+
+#### 4.6.1 es 的安装
+```bash
+# 1. 安装必要工具
+sudo apt-get update
+sudo apt-get install -y wget gpg apt-transport-https
+
+# 2. 导入 Elastic 官方 GPG key
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch \
+  | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+
+# 3. 添加 Elasticsearch 9.x APT 源
+echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/9.x/apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/elastic-9.x.list
+
+# 4. 安装 Elasticsearch
+sudo apt-get update
+sudo apt-get install -y elasticsearch
+```
 
 ### 4.7 httplib
 
