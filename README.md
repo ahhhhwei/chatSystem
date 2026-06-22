@@ -991,21 +991,32 @@ brpc 本质上来说是 rpc 调用，但是向谁调用什么服务得管理起�
 
 #### 4.6.1 es 的安装
 ```bash
-# 1. 安装必要工具
-sudo apt-get update
-sudo apt-get install -y wget gpg apt-transport-https
+echo "deb [trusted=yes] https://mirrors.tuna.tsinghua.edu.cn/elasticstack/8.x/apt/ stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
 
-# 2. 导入 Elastic 官方 GPG key
-wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch \
-  | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
-
-# 3. 添加 Elasticsearch 9.x APT 源
-echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/9.x/apt stable main" \
-  | sudo tee /etc/apt/sources.list.d/elastic-9.x.list
-
-# 4. 安装 Elasticsearch
 sudo apt-get update
 sudo apt-get install -y elasticsearch
+```
+
+安装好后启动：
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now elasticsearch.service
+sudo systemctl status elasticsearch.service
+```
+
+验证安装 es
+![](./pic/验证安装es)
+
+设置密码：
+```bash
+/usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -i
+```
+
+安装 ik 分词器插件，注意，插件的版本号必须和上面 es 的版本号一致。
+
+> 由于网络原因，我是在 github 上下载好压缩包后上传服务器解压安装的
+```bash
+/usr/share/elasticsearch/bin/elasticsearch-plugin install --batch file:///root/Desktop/chatSystem/elasticsearch-analysis-ik-8.19.16.zip
 ```
 
 ### 4.7 httplib
