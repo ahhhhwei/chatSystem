@@ -982,12 +982,16 @@ brpc 本质上来说是 rpc 调用，但是向谁调用什么服务得管理起�
    - 一个服务可能会有多个节点提供服务，每个节点都有自己的 channel
    - 建立服务与信道的映射关系，并且关系是一对多，采用 RR 轮转策略进行获取
 2. 总体的服务信道管理类
-   - 将
+   - 将多个服务的信道管理对象管理起来
+
+
 
 #### 4.5.5 brpc 和 etcd 联调
 
 
 ### 4.6 es
+
+Elasticsearch 是一个分布式搜索与分析引擎。它的主要功能是存储和搜索，文档经过分词、倒排索引后写入数据库，查询时使用相同分词器分词，通过倒排索引找到候选文档，然后计算相关度分数并排序返回。
 
 #### 4.6.1 es 的安装
 ```bash
@@ -1004,6 +1008,8 @@ sudo systemctl enable --now elasticsearch.service
 sudo systemctl status elasticsearch.service
 ```
 
+![](./pic/查看es服务的状态.png)
+
 验证安装 es
 ![](./pic/验证安装es)
 
@@ -1015,8 +1021,160 @@ sudo systemctl status elasticsearch.service
 安装 ik 分词器插件，注意，插件的版本号必须和上面 es 的版本号一致。
 
 > 由于网络原因，我是在 github 上下载好压缩包后上传服务器解压安装的
-```bash
-/usr/share/elasticsearch/bin/elasticsearch-plugin install --batch file:///root/Desktop/chatSystem/elasticsearch-analysis-ik-8.19.16.zip
+> ```bash
+> /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch file:///root/Desktop/chatSystem/elasticsearch-analysis-ik-8.19.16.zip
+> ```
+>
+> 安装完成后重启 es：`systemctl restart elasticsearch`
+
+
+设置外网访问：如果新配置完成的话，默认只能在本机进行访问：
+
+```shell
+vim vim /etc/elasticsearch/elasticsearch.yml
+
+# 新增配置
+network.host: 0.0.0.0
+http.port: 9200
+cluster.initial_master_nodes: ["node-1"]
+```
+
+安装 `kibana`
+```shell
+apt install kibana
+```
+
+配置kibana
+```shell
+vim /etc/kibana/kibana.yml
+```
+
+![](./pic/配置kibana.png)
+
+```shell
+# 启动 kibana
+systemctl start kibana 
+# 设置开机自启
+systemctl enable kibana
+# 验证安装
+systemctl status kibana
+```
+
+es 客户端的安装
+
+```shell
+# 安装 MicroHTTPD 库 
+apt-get install libmicrohttpd-dev
+
+# 克隆代码
+git clone https://github.com/seznam/elasticlient
+
+# 切换目录
+cd elasticlient
+
+# 更新子模块
+git submodule update --init --recursive
+
+cmake .. \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DUSE_SYSTEM_CURL=ON \
+    -DBUILD_CPR_TESTS=OFF \
+    -DBUILD_ELASTICLIENT_TESTS=OFF \
+    -DBUILD_ELASTICLIENT_EXAMPLE=OFF
+
+# 编译
+make -j"$(nproc)"
+
+# 安装
+make install
+```
+
+#### 4.6.2 es 的核心概念
+Elasticsearch 存储数据的结构可以记成：
+
+```
+集群 Cluster
+└── 索引 Index
+    ├── 映射 Mapping
+    ├── 文档 Document
+    │   ├── 字段 Field
+    │   ├── 字段 Field
+    │   └── 字段 Field
+    └── 文档 Document
+```
+
+以聊天系统为例：
+```
+索引：chat_messages
+
+文档1：
+{
+  "sender_id": "user_001",
+  "content": "你好，Elasticsearch",
+  "sent_at": "2026-07-20T20:00:00+08:00"
+}
+
+文档2：
+{
+  "sender_id": "user_002",
+  "content": "C++ 如何连接 Elasticsearch",
+  "sent_at": "2026-07-20T20:01:00+08:00"
+}
+```
+
+其中：
+```
+chat_messages                  → 索引
+一整条 JSON                    → 文档
+sender_id、content、sent_at    → 字段
+字段的数据类型和搜索规则       → Mapping
+```
+
+- 索引（Index）：一组用途相近的文档。
+- 文档（Document） ：文档就是一条 JSON 数据，相当于数据库中的一行。
+- 字段（Field）：字段就是 JSON 的一个属性。其中字符转类型：
+  - text：用于全文搜索，会经过哦分词器处理。
+  - keyword：用完整词匹配，不进行分词。
+- 映射（mapping） ：Mapping 相当于告诉 Elasticsearch：哪些字段需要分词，做出索引映射，能够进行数据检索。
+
+```json
+POST /user/_doc 
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {  # 自定义分词器
+        "ik": {  # 自定义ik中文分词器
+          "tokenizer": "ik_max_word"  # ik_max_word：最大粒度分词，拆分尽可能多词汇
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": true,  # 开启动态映射，新增字段自动识别类型
+    "properties": {
+      "nickname": {  # 昵称
+        "type": "text",  # 文本类型，支持分词检索
+        "analyzer": "ik_max_word"  # 使用ik中文分词器分词
+      },
+      "user_id": {  # 用户ID
+        "type": "keyword",  # 关键字类型，不分词，完整精确匹配
+        "analyzer": "standard"  # ES默认标准分词器（keyword字段实际不生效）
+      },
+      "phone": {  # 手机号
+        "type": "keyword",  # 关键字类型，完整匹配手机号
+        "analyzer": "standard"
+      },
+      "description": {  # 描述
+        "type": "text",  # 文本类型
+        "enabled": false  # 仅存储字段值，不构建索引、无法检索
+      },
+      "avatar_id": {  # 头像ID
+        "type": "keyword",
+        "enabled": false  # 仅存储，不参与检索查询
+      }
+    }
+  }
+}
 ```
 
 ### 4.7 httplib
