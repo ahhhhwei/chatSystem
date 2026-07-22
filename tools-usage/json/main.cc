@@ -9,9 +9,31 @@ bool Serialize(const Json::Value &val, std::string &dst)
     Json::StreamWriterBuilder swb;
     std::unique_ptr<Json::StreamWriter> sw(swb.newStreamWriter());
 
+    // 工厂：
+    // 普通对象创建：
+    // Car car;
+    // Car* car = new Car();
+    // 工厂模式则是：
+    // CarFactory factory;
+    // Car* car = factory.createCar();
+    // 上面代码中的 swb.newStreamWriter(); 表示根据当前配置，创建一个 JSON 写入器
+    // StreamWriterBuilder
+    //     ↓ 创建
+    //     StreamWriter
+    //     ↓ 使用
+    //         将Json::Value写入输出流
+    //             Json::StreamWriterBuilder swb;
+
+    // Json::StreamWriter *writer = swb.newStreamWriter();
+
     // 通过 write 接口进行序列化
-    std::stringstream ss;
-    int ret = sw->write(val, &ss);
+    std::stringstream ss;          // 内存中临时的文本容器，但它提供流式读写接口
+    int ret = sw->write(val, &ss); // write 不直接返回字符串，因为流不一定是写入字符串，还有可能写入文件，或是标准输出等
+    // 写入文件
+    // std::ofstream ofs("student.json");
+    // sw->write(val, &ofs);
+    // 写入标准输出
+    // sw->write(val, &std::cout);
     if (ret != 0)
     {
         std::cout << "Json 序列化失败！" << std::endl;

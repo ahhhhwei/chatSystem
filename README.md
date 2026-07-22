@@ -195,7 +195,7 @@ apt-get install libgtest-dev
    // bool 值检查
    ASSERT_TRUE(参数);  // 期待表达式结果为 true
    ASSERT_FALSE(参数); // 期待表达式结果为 false
-
+   
    // 数值型数据检查
    ASSERT_EQ(参数1, 参数2);  // equal，两个值相等才判定通过
    ASSERT_NE(参数1, 参数2);  // not equal，两个值不相等才判定通过
@@ -271,7 +271,7 @@ apt-get install libgtest-dev
   #include <spdlog/spdlog.h>
   #include <spdlog/sinks/stdout_color_sinks.h>
   #include <iostream>
-
+  
   int main()
   {
       // 设置全局的刷新策略
@@ -279,13 +279,13 @@ apt-get install libgtest-dev
       spdlog::flush_on(spdlog::level::level_enum::debug); // 遇到debug以上等级立即刷新
       // 设置全局的日志输出等级（每个日志器还可以独立进行设置）
       spdlog::set_level(spdlog::level::level_enum::debug);
-
+  
       // 创建同步日志器（工厂接口默认创建的就是同步日志器）
       auto logger = spdlog::stdout_color_mt("default-logger");       // 标准输出
       // 设置日志器的刷新策略，以及日志器的输出等级
       logger->flush_on(spdlog::level::level_enum::debug);
       logger->set_level(spdlog::level::level_enum::debug);
-
+  
       // 设置日志输出格式
       logger->set_pattern("[%n][%H:%M:%S][%t][%-8l] %v"); // -8：格式化对齐规则：左对齐，固定占 8 个字符宽度
       // 进行简单的日志输出
@@ -296,7 +296,7 @@ apt-get install libgtest-dev
       logger->error("你好！{}", "ahwei");
       logger->critical("你好！{}", "ahwei");
       std::cout << "log done!" << std::endl;
-
+  
       return 0;
   }
   ```
@@ -309,7 +309,7 @@ apt-get install libgtest-dev
   #include <spdlog/sinks/stdout_color_sinks.h>
   #include <spdlog/sinks/basic_file_sink.h>
   #include <iostream>
-
+  
   int main()
   {
       // 设置全局的刷新策略
@@ -317,14 +317,14 @@ apt-get install libgtest-dev
       spdlog::flush_on(spdlog::level::level_enum::debug); // 遇到debug以上等级立即刷新
       // 设置全局的日志输出等级（每个日志器还可以独立进行设置）
       spdlog::set_level(spdlog::level::level_enum::debug);
-
+  
       // 创建同步日志器（工厂接口默认创建的就是同步日志器）
       // auto logger = spdlog::stdout_color_mt("default-logger");       // 标准输出
       auto logger = spdlog::basic_logger_mt("file-logger", "sync.log"); // 普通文件
       // 设置日志器的刷新策略，以及日志器的输出等级
       logger->flush_on(spdlog::level::level_enum::debug);
       logger->set_level(spdlog::level::level_enum::debug);
-
+  
       // 设置日志输出格式
       logger->set_pattern("[%n][%H:%M:%S][%t][%-8l] %v"); // -8：格式化对齐规则：左对齐，固定占 8 个字符宽度
       // 进行简单的日志输出
@@ -335,7 +335,7 @@ apt-get install libgtest-dev
       logger->error("你好！{}", "ahwei");
       logger->critical("你好！{}", "ahwei");
       std::cout << "log done!" << std::endl;
-
+  
       return 0;
   }
   ```
@@ -349,7 +349,7 @@ apt-get install libgtest-dev
   #include <spdlog/sinks/basic_file_sink.h>
   #include <spdlog/async.h>
   #include <iostream>
-
+  
   int main()
   {
       // 设置全局的刷新策略
@@ -357,13 +357,13 @@ apt-get install libgtest-dev
       spdlog::flush_on(spdlog::level::level_enum::debug); // 遇到debug以上等级立即刷新
       // 设置全局的日志输出等级（每个日志器还可以独立进行设置）
       spdlog::set_level(spdlog::level::level_enum::debug);
-
+  
       // 创建异步日志器
       auto logger = spdlog::stdout_color_mt<spdlog::async_factory>("async-logger");       // 标准输出
       // 设置日志器的刷新策略，以及日志器的输出等级
       logger->flush_on(spdlog::level::level_enum::debug);
       logger->set_level(spdlog::level::level_enum::debug);
-
+  
       // 设置日志输出格式
       logger->set_pattern("[%n][%H:%M:%S][%t][%-8l] %v"); // -8：格式化对齐规则：左对齐，固定占 8 个字符宽度
       // 进行简单的日志输出
@@ -374,7 +374,7 @@ apt-get install libgtest-dev
       logger->error("你好！{}", "ahwei");
       logger->critical("你好！{}", "ahwei");
       std::cout << "log done!" << std::endl;
-
+  
       return 0;
   }
   ```
@@ -492,14 +492,14 @@ Etcd 是一个分布式、高可用的一致性键值存储系统，用于配置
    ```bash
    # 1. 下载etcd 3.5.21 amd64
    wget https://github.com/etcd-io/etcd/releases/download/v3.5.21/etcd-v3.5.21-linux-amd64.tar.gz
-
+   
    # 2. 解压
    tar -zxvf etcd-v3.5.21-linux-amd64.tar.gz -C /usr/local/
-
+   
    # 3. 把二进制放入系统PATH
    cd /usr/local/etcd-v3.5.21-linux-amd64
    cp etcd etcdctl /usr/local/bin/
-
+   
    # 4. 验证安装
    etcd --version
    etcdctl version
@@ -1176,6 +1176,285 @@ POST /user/_doc
   }
 }
 ```
+
+#### 4.6.3 es 客户端接口介绍
+
+ES 本质上提供的是 HTTP REST 接口，elasticlient 完成 HTTP 请求。用 JsonCpp 构造请求正文，并解析 ES 返回的 JSON
+
+- 创建 ES 客户端对象
+
+  使用 `elasticlient::Client` 的构造函数：
+  ```cpp
+  #include <elasticlient/client.h>
+
+  elasticlient::Client client({
+      "http://127.0.0.1:9200/"
+  });
+  ```
+
+  也可以传多个 ES 节点：客户端会在节点之间尝试请求，所有节点都无法连结时，会抛异常
+  ```cpp
+  elasticlient::Client client({
+    "http://192.168.1.101:9200/",
+    "http://192.168.1.102:9200/",
+    "http://192.168.1.103:9200/"
+  });
+  ```
+  还可以带超时时间：
+  ```cpp
+  elasticlient::Client client(
+    {"http://127.0.0.1:9200/"},
+    6000
+  );
+  ```
+
+- 四个客户端接口：
+  
+  以下四个接口均返回 `cpr::Response`。`response.status_code` 可以获取 HTTP状态码；`response.text` 可以获取 ES 返回的 JSON 字符串
+  
+  - search：条件搜索
+    ```cpp
+    cpr::Response search(
+    const std::string& indexName, 	//  ES 索引名
+    const std::string& docType,		// 文档类型，ES 7 中通常写 "_doc"
+    const std::string& body,		// 查询 JSON 字符串
+    const std::string& routing = "" // 自定义路由，一般不传
+    );
+    ```
+    
+  - get：根据 `_id` 查询文档
+    ```cpp
+    cpr::Response get(
+      const std::string& indexName,
+      const std::string& docType,
+      const std::string& id = "",
+      const std::string& routing = ""
+    );
+    ```
+    
+    ```cpp
+    cpr::Response response = client.get("user", "_doc", "1");
+    // GET /user/_doc/1
+    ```
+    
+  - index：新增或覆盖文档（不存在，新增；存在，覆盖）
+    
+    ```cpp
+    cpr::Response index(
+        const std::string& indexName,
+        const std::string& docType,
+        const std::string& id,
+        const std::string& body,
+        const std::string& routing = ""
+    );
+    ```
+    
+    ```cpp
+    cpr::Response response = client.index("user", "_doc", "1", body);
+    // 大致对应：PUT /user/_doc/1
+    ```
+    
+  - remove：根据 _id 删除文档
+    
+    ```cpp
+    cpr::Response remove(
+    const std::string& indexName,
+    const std::string& docType,
+    const std::string& id,
+    const std::string& routing = ""
+    );
+    ```
+    
+    ```cpp
+    cpr::Response response = client.remove("user", "_doc", "1");
+    // DELETE /user/_doc/
+    ```
+  
+- JsonCpp 的作用：
+
+  静态查询可以直接使用原始字符串：`R"( ... )"` 是 C++ 原始字符串。但是实际情况中，查询条件通常来自变量，手工拼接 JSON 很危险，因此使用 JsonCpp。
+
+  - `Json::Value`
+
+    他是一个能同时表示以下类型的万能 JSON 节点：JSON对象、JSON数组、字符串、整数、浮点数、布尔值、null
+
+    使用时包含 `\#include <jsoncpp/json/json.h>` 头文件
+
+    1. 创建 JSON 对象
+
+       ```cpp
+       // 目标 Json
+       // {
+       //   "name": "张三",
+       //   "age": 24,
+       //   "score": 88.5,
+       //   "enabled": true
+       // }
+       ```
+
+    2. 创建嵌套对象
+
+       ```cpp
+       // 目标 Json
+       // {
+       //   "query": {
+       //     "match": {
+       //       "nickname": "张三"
+       //     }
+       //   }
+       // }
+       
+       // 可以连续直接使用 []
+       Json::Value root;
+       
+       root["name"] = "张三";
+       root["age"] = 24;
+       root["score"] = 88.5;
+       root["enabled"] = true;
+       
+       // 等价于逐层构造
+       // 实际开发中，较复杂的结构建议分层构造，可读性更好。
+       Json::Value match;
+       match["nickname"] = "张三";
+       
+       Json::Value query;
+       query["match"] = match;
+       
+       Json::Value root;
+       root["query"] = query;
+       ```
+
+    3. 创建数组
+
+       ```cpp
+       // 目标 Json
+       // {
+       //   "user_ids": [
+       //     "USER001",
+       //     "USER002",
+       //     "USER003"
+       //   ]
+       // }
+       
+       Json::Value ids(Json::arrayValue);
+       
+       ids.append("USER001");
+       ids.append("USER002");
+       ids.append("USER003");
+       
+       Json::Value root;
+       root["user_ids"] = ids;
+       
+       // 读取数组长度
+       Json::ArrayIndex count = ids.size();
+       
+       // 遍历
+       for (const auto& id : ids) {
+           std::cout << id.asString() << '\n';
+       }
+       ```
+
+  - JsonCpp 序列化
+
+    ```cpp
+    #include <json/json.h>
+    #include <string>
+    
+    std::string JsonToString(const Json::Value& value)
+    {
+        Json::StreamWriterBuilder builder;
+    
+        // 不进行漂亮缩进，减少网络传输体积
+        builder["indentation"] = "";
+    
+        // Json::StreamWriterBuilder
+        // Json::StreamWriter
+        // writeValue
+        // 也是序列化体系的一部分，不过现在直接使用：
+        return Json::writeString(builder, value);
+        // 更加简洁，也不需要手动管理 StreamWriter 指针。
+    }
+    ```
+
+  - JsonCpp 反序列化
+
+    ```cpp
+    #include <json/json.h>
+    #include <memory>
+    #include <string>
+    
+    bool StringToJson(
+        const std::string& text,
+        Json::Value& root,
+        std::string& error)
+    {
+        Json::CharReaderBuilder builder;
+    
+        std::unique_ptr<Json::CharReader> reader(
+            builder.newCharReader()
+        );
+    
+        return reader->parse(
+            text.data(),
+            text.data() + text.size(),
+            &root,
+            &error
+        );
+    }
+    ```
+
+- 简单使用：
+
+  ```cpp
+  #include <cpr/cpr.h>
+  #include <iostream>
+  
+  int main()
+  {
+      const std::string username = "elastic";
+      const std::string password = "***********";
+  
+      cpr::Response rsp = cpr::Post(
+          cpr::Url{"https://127.0.0.1:9200/user/_search"},
+          cpr::Authentication{username, password},
+          cpr::Header{
+              {"Content-Type", "application/json"}},
+          cpr::Body{
+              R"({
+                  "query": {
+                      "match_all": {}
+                  }
+              })"},
+          // 临时调试：忽略自签名证书校验
+          cpr::VerifySsl{false});
+  
+      if (rsp.error.code != cpr::ErrorCode::OK)
+      {
+          std::cerr << "网络请求失败：" << rsp.error.message << '\n';
+          return -1;
+      }
+  
+      std::cout << "状态码：" << rsp.status_code << '\n';
+      std::cout << "响应正文：" << rsp.text << '\n';
+  
+      if (rsp.status_code < 200 || rsp.status_code >= 300)
+      {
+          std::cerr << "Elasticsearch 请求未成功\n";
+          return -1;
+      }
+  
+      return 0;
+  }
+  ```
+
+  首先向 es 中插入数据：
+
+  ![](./pic/es插入数据.png)
+
+  然后执行程序
+  
+  ![](./pic/es客户端.png)
+
 
 ### 4.7 httplib
 
