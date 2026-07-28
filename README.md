@@ -958,6 +958,7 @@ class Channel : public ChannelBase {
 
 #### 4.5.3 RPC 调用实现样例
 [服务端：](./tools-usage/brpc/server.cc)
+
 1. 创建 rpc 服务子类继承 pb 中的 EchoService 服务类，并实现内部的业务接口逻辑
 2. 创建 rpc 服务器类，搭建服务器 
 3. 向服务器类中添加 rpc 子服务对象，告诉服务器收到什么请求用哪个接口处理
@@ -1454,11 +1455,82 @@ ES 本质上提供的是 HTTP REST 接口，elasticlient 完成 HTTP 请求。�
   然后执行程序
   
   ![](./pic/es客户端.png)
+  
+- 二次封装
 
+  封装四个操作：索引创建、数据新增，数据查询，数据删除。主要完成的是请求正文的构造过程。
+
+  - 索引创建
+    1. 能够动态设定索引名称，索引类型
+    2. 能够动态添加字段，并设置字段类型，设置分词器类型，是否构造索引
 
 ### 4.7 httplib
 
+```cpp
+#include "../common/httplib.h"
+
+int main()
+{
+    // 1. 实例化服务器对象
+    httplib::Server server;
+    // 2. 注册回调函数 void(const httplib::Request&, httplib::Response&)
+    server.Get("/hello", [](const httplib::Request &req, httplib::Response &res)
+               {
+        std::cout << "method: " << req.method << std::endl;
+        std::cout << "path: " << req.path << std::endl;
+        for (auto it :req.headers) {
+            std::cout << it.first << " : " << it.second << std::endl;
+        }
+        std::string body = "<html><body><h1>ahwei</h1></body></html>";
+        res.set_content(body, "text/html");
+        res.status = 200; });
+    // 3. 启动服务器
+    server.listen("0.0.0.0", 9090);
+    return 0;
+}
+```
+
+在浏览器中输入 http://127.0.0.1:9090/hello 效果如下：
+
+![](./pic/http-get.png)
+
+这里 get 可以大致理解为
+
+```cpp
+class Server {
+public:
+    void Get(const std::string& path, Handler handler)
+    {
+        routes.push_back({path, handler});
+    }
+
+private:
+    struct Route {
+        std::string path;
+        Handler handler;
+    };
+
+    std::vector<Route> routes;
+};
+```
+
+执行 `server.Get("/hi", lambda);` 只是向服务器的路由表里保存了一条记录
+
+```
+请求方法：GET
+请求路径：/hi
+处理函数：HelloWorld
+```
+
+等到未来服务器监听端口，客户端发来对应请求时才被调用。
+
 ### 4.8 websocketpp
+
+> WebSocket++ 是一个事件驱动的 C++ WebSocket 框架。它底层用 Asio 处理 TCP 网络通信，上层负责 HTTP 握手、WebSocket 协议解析、连接管理和回调触发。
+
+websocket 是一个应用层的 tcp（tcp 传输，而非传输层协议）长连接协议，在我们的项目中，不单单是请求-响应的业务处理，还包含了数据的主动推送，这时 HTTP 协议无法实现（不允许服务器无请求地随意发送响应）。
+
+选择 websocket 协议的原因：因为 http 通信支持 websocket 的切换
 
 ### 4.9  redis
 
