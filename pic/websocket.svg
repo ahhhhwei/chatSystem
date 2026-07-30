@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 700" width="100%" height="100%" style="background-color: #f4f7f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- 箭号定义 -->
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#4ea185"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#3b7280"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#3e3b6e"/>
+    </marker>
+  </defs>
+
+  <!-- 顶部图标区域 -->
+  <!-- 客户端 (电脑) -->
+  <g transform="translate(190, 20)">
+    <rect x="15" y="10" width="70" height="48" rx="4" fill="none" stroke="#3b7280" stroke-width="4"/>
+    <path d="M 20 50 L 80 50" stroke="#3b7280" stroke-width="3"/>
+    <path d="M 50 58 L 50 70" stroke="#3b7280" stroke-width="5"/>
+    <path d="M 35 70 L 65 70" stroke="#3b7280" stroke-width="4"/>
+  </g>
+
+  <!-- 服务端 (服务器) -->
+  <g transform="translate(510, 20)">
+    <rect x="10" y="10" width="80" height="60" rx="4" fill="none" stroke="#3b7280" stroke-width="4"/>
+    <line x1="10" y1="25" x2="90" y2="25" stroke="#3b7280" stroke-width="2"/>
+    <line x1="10" y1="40" x2="90" y2="40" stroke="#3b7280" stroke-width="2"/>
+    <line x1="10" y1="55" x2="90" y2="55" stroke="#3b7280" stroke-width="2"/>
+    <!-- 服务器指示灯 -->
+    <circle cx="75" cy="17.5" r="2.5" fill="#3b7280"/>
+    <circle cx="82" cy="17.5" r="2.5" fill="#3b7280"/>
+    <circle cx="75" cy="32.5" r="2.5" fill="#3b7280"/>
+    <circle cx="82" cy="32.5" r="2.5" fill="#3b7280"/>
+    <circle cx="75" cy="47.5" r="2.5" fill="#3b7280"/>
+    <circle cx="82" cy="47.5" r="2.5" fill="#3b7280"/>
+    <circle cx="75" cy="62.5" r="2.5" fill="#3b7280"/>
+    <circle cx="82" cy="62.5" r="2.5" fill="#3b7280"/>
+  </g>
+
+  <!-- 主传输时间轴（黑线） -->
+  <line x1="240" y1="110" x2="240" y2="620" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+  <line x1="560" y1="110" x2="560" y2="620" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- 左侧协议块 -->
+  <!-- TCP 三次握手 -->
+  <rect x="40" y="150" width="160" height="90" rx="12" fill="#72bda3"/>
+  <text x="120" y="190" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">TCP</text>
+  <text x="120" y="215" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">三次握手</text>
+
+  <!-- HTTP -->
+  <rect x="40" y="260" width="160" height="150" rx="12" fill="#4a858d"/>
+  <text x="120" y="340" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="bold">HTTP</text>
+
+  <!-- WebSocket -->
+  <rect x="40" y="430" width="160" height="170" rx="12" fill="#3e3b6e"/>
+  <text x="120" y="520" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="bold">WebSocket</text>
+
+  <!-- 右侧协议块 -->
+  <!-- TCP 三次握手 -->
+  <rect x="600" y="150" width="160" height="90" rx="12" fill="#72bda3"/>
+  <text x="680" y="190" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">TCP</text>
+  <text x="680" y="215" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">三次握手</text>
+
+  <!-- HTTP -->
+  <rect x="600" y="260" width="160" height="80" rx="12" fill="#4a858d"/>
+  <text x="680" y="305" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="bold">HTTP</text>
+
+  <!-- WebSocket -->
+  <rect x="600" y="360" width="160" height="240" rx="12" fill="#3e3b6e"/>
+  <text x="680" y="485" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="bold">WebSocket</text>
+
+  <!-- 消息传输交互线与文本 -->
+
+  <!-- 1. SYN -->
+  <line x1="240" y1="120" x2="550" y2="145" stroke="#4ea185" stroke-width="3.5" marker-end="url(#arrow-green)"/>
+  <text x="395" y="123" text-anchor="middle" fill="#4ea185" font-size="15" font-weight="bold">SYN</text>
+
+  <!-- 2. SYN+ACK -->
+  <line x1="560" y1="155" x2="250" y2="185" stroke="#4ea185" stroke-width="3.5" marker-end="url(#arrow-green)"/>
+  <text x="395" y="163" text-anchor="middle" fill="#4ea185" font-size="15" font-weight="bold">SYN+ACK</text>
+
+  <!-- 3. ACK -->
+  <line x1="240" y1="195" x2="550" y2="225" stroke="#4ea185" stroke-width="3.5" marker-end="url(#arrow-green)"/>
+  <text x="395" y="203" text-anchor="middle" fill="#4ea185" font-size="15" font-weight="bold">ACK</text>
+
+  <!-- 4. Upgrade: WebSocket -->
+  <line x1="240" y1="245" x2="550" y2="290" stroke="#3b7280" stroke-width="3.5" marker-end="url(#arrow-blue)"/>
+  <text x="395" y="258" text-anchor="middle" fill="#3b7280" font-size="15" font-weight="bold">Upgrade: WebSocket</text>
+
+  <!-- 5. 101 Switching Protocols -->
+  <line x1="560" y1="310" x2="250" y2="370" stroke="#3b7280" stroke-width="3.5" marker-end="url(#arrow-blue)"/>
+  <text x="395" y="330" text-anchor="middle" fill="#3b7280" font-size="15" font-weight="bold">101 Switching Protocols</text>
+
+  <!-- 6. WebSocket 格式数据 1 -->
+  <line x1="560" y1="440" x2="250" y2="470" stroke="#3e3b6e" stroke-width="3.5" marker-end="url(#arrow-purple)"/>
+  <text x="395" y="443" text-anchor="middle" fill="#3e3b6e" font-size="15" font-weight="bold">WebSocket 格式数据</text>
+
+  <!-- 7. WebSocket 格式数据 2 -->
+  <line x1="560" y1="500" x2="250" y2="530" stroke="#3e3b6e" stroke-width="3.5" marker-end="url(#arrow-purple)"/>
+  <text x="395" y="503" text-anchor="middle" fill="#3e3b6e" font-size="15" font-weight="bold">WebSocket 格式数据</text>
+
+  <!-- 底部说明标签 -->
+  <g transform="translate(330, 630)">
+    <rect x="0" y="0" width="140" height="38" rx="6" fill="#fde047"/>
+    <text x="70" y="25" text-anchor="middle" fill="#000000" font-size="18" font-weight="bold">进行通信</text>
+  </g>
+</svg>

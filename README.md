@@ -1530,14 +1530,84 @@ private:
 
 websocket 是一个应用层的 tcp（tcp 传输，而非传输层协议）长连接协议，在我们的项目中，不单单是请求-响应的业务处理，还包含了数据的主动推送，这时 HTTP 协议无法实现（不允许服务器无请求地随意发送响应）。
 
+> 传统的 web 程序都属于“一问一答”的形式，即客户端给服务器发送一个 HTTP 请求，服务器给客户端返回一个 HTTP 响应。这种情况下服务器是属于被动的一方，如果客户端不主动发起请求服务器就无法主动给客户端响应。
+>
+> 网络即时聊天是非常依赖“消息推送”的，即需要服务器主动推送消息到客户端。如果只是原生的 HTTP 协议，想要实现消息推送，一般需要轮询的方式实现，而轮询的成本比较高并且也不能及时地获取到消息的响应。
+
 选择 websocket 协议的原因：因为 http 通信支持 websocket 的切换
 
+#### 4.8.1 原理解析
+
+![](./pic/websocket.svg)
+
+1. 先建立 TCP 连接
+
+   TCP 三次握手：
+
+   ```
+   客户端                         服务器
+      | -------- SYN ------------> |
+      | <----- SYN + ACK --------- |
+      | -------- ACK ------------> |
+   ```
+
+2. 客户端发送 HTTP 升级请求
+
+   随后浏览器会发送类似请求：
+
+   ```
+   GET /chat HTTP/1.1
+   Host: 127.0.0.1:8888
+   Connection: Upgrade
+   Upgrade: websocket
+   Sec-WebSocket-Version: 13
+   Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==
+   ```
+
+   当前请求先按 HTTP 处理，并希望把这条 TCP 连接升级成为 WebSocket
+
+3. 服务器返回 101
+
+   服务器确认后返回：
+
+   ```
+   HTTP/1.1 101 Switching Protocols
+   Connection: Upgrade
+   Upgrade: websocket
+   Sec-WebSocket-Accept: ...
+   ```
+
+   `101 Switching Protocols` 表示协议切换成功。
+
+   从此以后，这条 TCP 连接上不再传输普通 HTTP 请求和响应，而是传输 WebSocket 帧。
+
+#### 4.8.2 WebSocketpp 
+
+WebSocketpp 是一个 C++ WebSocket 库，协议解析和连接管理由它完成，底层异步网络 I/O 通常由 Asio 完成。
+
+WebSocketpp 的核心思想是事件驱动，因此要先注册回调函数：
+
+```
+连接建立时，调用 OnOpen
+收到消息时，调用 OnMessage
+连接关闭时，调用 OnClose
+普通 HTTP 请求到达时，调用 OnHttp
+```
+
+然后启动事件循环：
+
+```cpp
+server.run();
+```
+
 以下是一个示例，并用 [ws.html](./tools-usage/websockerpp/ws.html) 简单测试
+
 ```cpp
 #include <websocketpp/config/asio_no_tls.hpp>
+// asio_no_tls 表示不启用 TLS，因此支持的是：ws:// 而非 wss://
 #include <websocketpp/server.hpp>
 
-//    0. 定义server类型
+// 0. 定义server类型
 typedef websocketpp::server<websocketpp::config::asio> server_t;
 
 void onOpen(websocketpp::connection_hdl hdl)
@@ -1575,11 +1645,11 @@ int main()
     server.set_message_handler(msg_hadler);
     // 5. 启用地址重用
     server.set_reuse_addr(true);
-    // 5. 设置监听端口
+    // 5. 绑定并监听端口
     server.listen(9090);
-    // 6. 开始监听
+    // 6. 开始异步 accept
     server.start_accept();
-    // 7. 启动服务器
+    // 7. 启动服务器，进入事件循环
     server.run();
     return 0;
 }
