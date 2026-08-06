@@ -1658,7 +1658,215 @@ int main()
 
 ### 4.9  redis
 
-#### 4.9.1 安装
+#### 4.9.1 安装 redis
+
+```bash
+apt install redis -y
+```
+
+安装后，Redis 服务段叫 `redis-server`
+
+控制服务：
+
+```bash
+service redis-server start
+service redis-server stop
+service redis-server restart
+```
+
+或者使用 `systemctl`
+
+```bash
+systemctl start redis-server
+systemctl stop redis-server
+systemctl restart redis-server
+systemctl status redis-server
+```
+
+安装后测试：
+
+```bash
+redis-cli
+```
+
+![](./pic/redis-cli.png)
+
+支持远程连接：修改 `/etc/redis/redis.conf`
+
+- 修改 `bind 127.0.0.1` 为 `bind 0.0.0.0`
+- 修改 `protected-mode yes` 为 `protected-mode no`
+
+#### 4.9.2 安装 redis-plus-plus
+
+1. 安装 `hiredis`
+
+   `redis-plus-plus` 是基于 `hiredis` 实现的，`hiredis` 是一个 C 语言实现的 redis 客户端
+
+   ```bash
+   apt install libhiredis-dev 
+   ```
+
+2. 下载 `redis-plus-plus` 源码
+
+   ```bash
+   git clone https://github.com/sewenew/redis-plus-plus.git 
+   ```
+
+3. 编译安装 `redis-plus-plus`
+
+   使用 `cmake` 构建
+
+   ```bash
+   cd redis-plus-plus
+   mkdir build
+   cd build
+   
+   cmake ..
+   make
+   make install
+   ```
+
+   构建成功后，会在 `/usr/local/include/` 中多出 `sw` 目录，并且内部包含 `redis-plus-plus` 的一系列头文件，会在 `/usr/local/lib/` 中多出一系列`libredis` 库文件
+
+#### 4.9.3 接口
+
+- 连接 redis 配置类 `sw::redis::ConnectionOptions`
+
+  ```cpp
+  struct ConnectionOptions {
+      std::string host;				// redis 服务器的 ip 地址
+      int port = 6379;				// redis 的默认端口号
+      std::string path;				// Unix Domain Socket（Unix 域套接字）的文件路径
+      std::string user = "default";   // redis 默认用户名
+      std::string password;			// redis 配置认证
+      int db = 0;						// redis 默认提供编号数据库，不同数据库之间的键相互隔离
+      bool keep_alive = false;		// 是否启用 TCP Keepalive，用来检测长期空闲连接是否已经失效
+  };
+  ```
+
+- 连接池
+
+  ```cpp
+  struct ConnectionPoolOptions { 
+  	std::size_t size = 1; //最大连接数量 
+  } 
+  ```
+
+  redis 客户端不一定只维护一个 TCP 连接，它可以创建多个连接，例如：
+
+  ```
+  线程 1 ─→ Redis 连接 1
+  线程 2 ─→ Redis 连接 2
+  线程 3 ─→ Redis 连接 3
+  ```
+
+  这就是连接池
+
+- 创建 redis 客户端对象
+
+  ```cpp
+  std::shared_ptr<sw::redis::Redis> predis;
+  predis = std::make_shared<sw::redis::Redis>(opts);
+  ```
+
+  这里的 predis 是一个 redis 的客户端对象
+
+```cpp
+#include <sw/redis++/redis.h>
+#include <gflags/gflags.h>
+#include <iostream>
+#include <thread>
+
+DEFINE_string(ip, "127.0.0.1", "这是服务器的IP地址，格式：127.0.0.1");
+DEFINE_int32(port, 6379, "这是服务器的端口, 格式: 8080");
+DEFINE_int32(db, 0, "库的编号：默认0号");
+DEFINE_bool(keep_alive, true, "是否进行长连接保活");
+
+void print(sw::redis::Redis &client)
+{
+    auto user1 = client.get("会话ID1");
+    if (user1)
+        std::cout << *user1 << std::endl;
+    auto user2 = client.get("会话ID2");
+    if (user2)
+        std::cout << *user2 << std::endl;
+    auto user3 = client.get("会话ID3");
+    if (user3)
+        std::cout << *user3 << std::endl;
+    auto user4 = client.get("会话ID4");
+    if (user4)
+        std::cout << *user4 << std::endl;
+    auto user5 = client.get("会话ID5");
+    if (user5)
+        std::cout << *user5 << std::endl;
+}
+void add_string(sw::redis::Redis &client)
+{
+    client.set("会话ID1", "用户ID1");
+    client.set("会话ID2", "用户ID2");
+    client.set("会话ID3", "用户ID3");
+    client.set("会话ID4", "用户ID4");
+    client.set("会话ID5", "用户ID5");
+
+    client.del("会话ID3");
+
+    client.set("会话ID5", "用户ID555"); // 数据已存在则进行修改，不存在则新增
+
+    print(client);
+}
+
+void expired_test(sw::redis::Redis &client)
+{
+    // 这次的新增，数据其实已经有了，因此本次是修改
+    // 不仅仅修改了val，而且还给键值对新增了过期时间
+    client.set("会话ID1", "用户ID1111", std::chrono::milliseconds(1000));
+
+    print(client);
+    std::cout << "------------休眠2s-----------\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    print(client);
+}
+
+void list_test(sw::redis::Redis &client)
+{
+    client.rpush("群聊1", "成员1");
+    client.rpush("群聊1", "成员2");
+    client.rpush("群聊1", "成员3");
+    client.rpush("群聊1", "成员4");
+    client.rpush("群聊1", "成员5");
+
+    std::vector<std::string> users;
+    client.lrange("群聊1", 0, -1, std::back_inserter(users));
+
+    for (auto user : users)
+    {
+        std::cout << user << std::endl;
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    google::ParseCommandLineFlags(&argc, &argv, true);
+    // 功能接口演示中：
+    // 1. 构造连接选项，实例化Redis对象，连接服务器
+    sw::redis::ConnectionOptions opts;
+    opts.host = FLAGS_ip;
+    opts.port = FLAGS_port;
+    opts.db = FLAGS_db;
+    opts.keep_alive = FLAGS_keep_alive;
+    sw::redis::Redis client(opts);
+    // 2. 添加字符串键值对，删除字符串键值对，获取字符串键值对
+    add_string(client);
+    // 3. 实践控制数据有效时间的操作
+    expired_test(client);
+    // 4. 列表的操作，主要实现数据的右插，左获取
+    std::cout << "--------------------------\n";
+    list_test(client);
+    return 0;
+}
+```
+
+![](./pic/redis.png)
 
 ### 4.10 ODB
 

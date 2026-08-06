@@ -4,4 +4,5 @@ tools-usage/brpc/client
 tools-usage/brpc/server
 *.zip
 
-elasticlient/tools-usage/redis/redis-plus-plus/
+elasticlient/
+tools-usage/redis/redis-plus-plus/
