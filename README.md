@@ -1870,6 +1870,462 @@ int main(int argc, char *argv[])
 
 ### 4.10 ODB
 
+ODB 是面向 C++ 的对象关系映射工具，可以将 C++ 类映射为数据库中的数据表，并生成对应的数据库访问代码。本项目使用 ODB 连接 MySQL 数据库。
+
+#### 4.10.1 ODB 的安装
+
+##### 4.10.1.1 安装环境
+
+本次安装使用的环境如下：
+
+```text
+操作系统：Ubuntu 20.04
+编译器：GCC 10、G++ 10
+构建工具：build2 0.18.1
+ODB 版本：2.5
+数据库：MySQL
+安装用户：root
+安装目录：/usr
+```
+
+ODB 的安装主要包括以下部分：
+
+```text
+build2 构建工具
+GCC 插件开发环境
+ODB 编译器
+ODB 基础运行时库
+ODB MySQL 运行时库
+ODB Boost 支持库
+```
+
+##### 4.10.1.2 安装 build2
+
+创建 build2 安装目录：
+
+```bash
+mkdir -p ~/workspace/build2-build
+cd ~/workspace/build2-build
+```
+
+下载 build2 0.18.1 安装脚本：
+
+```bash
+curl -sSfO \
+https://download.build2.org/0.18.1/build2-install-0.18.1.sh
+```
+
+执行安装：
+
+```bash
+sh ./build2-install-0.18.1.sh \
+  --timeout 1800 \
+  2>&1 | tee build2-install.log
+```
+
+其中，`--timeout 1800` 表示将下载超时时间设置为 1800 秒，`tee build2-install.log` 用于将安装日志保存到文件中。
+
+如果出现以下错误：
+
+```text
+error: staged executable name 'b-stage' clashes with existing
+/usr/local/bin/b-stage
+```
+
+说明之前的安装过程遗留了阶段性可执行文件。执行以下命令删除残留文件：
+
+```bash
+rm -f \
+  /usr/local/bin/b-stage \
+  /usr/local/bin/bx-stage \
+  /usr/local/bin/bpkg-stage \
+  /usr/local/bin/bdep-stage
+```
+
+清理完成后重新执行安装命令：
+
+```bash
+sh ./build2-install-0.18.1.sh \
+  --timeout 1800 \
+  2>&1 | tee build2-install.log
+```
+
+将 build2 的安装目录加入环境变量：
+
+```bash
+export PATH=/usr/local/bin:$PATH
+echo 'export PATH=/usr/local/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+hash -r
+```
+
+检查 build2 是否安装成功：
+
+```bash
+b --version
+bx --version
+bpkg --version
+bdep --version
+```
+
+以上命令均能够正常输出版本信息时，表示 build2 安装成功。
+
+##### 4.10.1.3 安装 GCC 10 插件开发包
+
+Ubuntu 20.04 当前使用 GCC 10，因此安装 GCC 10、G++ 10 以及对应的插件开发包。
+
+首先安装软件源管理工具并启用 Universe 软件源：
+
+```bash
+apt install -y software-properties-common
+add-apt-repository -y universe
+apt update
+```
+
+安装 GCC 10：
+
+```bash
+apt install -y \
+  gcc-10 \
+  g++-10 \
+  gcc-10-plugin-dev
+```
+
+检查 GCC 和 G++ 版本：
+
+```bash
+gcc-10 --version
+g++-10 --version
+```
+
+查看 GCC 插件目录：
+
+```bash
+gcc-10 -print-file-name=plugin
+```
+
+##### 4.10.1.4 安装 ODB 编译器
+
+创建 ODB 构建目录：
+
+```bash
+mkdir -p ~/workspace/odb-build
+cd ~/workspace/odb-build
+```
+
+使用 `bpkg create` 创建 ODB 编译器的独立构建环境：
+
+```bash
+bpkg create -d odb-gcc-10 cc \
+  config.cxx=g++-10 \
+  config.cc.coptions=-O3 \
+  config.bin.rpath=/usr/lib \
+  config.install.root=/usr
+```
+
+参数含义如下：
+
+```text
+-d odb-gcc-10                 创建名为 odb-gcc-10 的构建配置
+config.cxx=g++-10             使用 G++ 10 编译
+config.cc.coptions=-O3        使用 O3 优化级别
+config.bin.rpath=/usr/lib     设置运行时动态库搜索目录
+config.install.root=/usr      将程序安装到 /usr 目录
+```
+
+进入构建目录：
+
+```bash
+cd ~/workspace/odb-build/odb-gcc-10
+```
+
+从 ODB beta 软件源下载并构建 ODB 编译器：
+
+```bash
+bpkg build odb@https://pkg.cppget.org/1/beta
+```
+
+构建完成后运行测试：
+
+```bash
+bpkg test odb
+```
+
+安装 ODB 编译器：
+
+```bash
+bpkg install odb
+```
+
+检查 ODB 编译器是否安装成功：
+
+```bash
+odb --version
+```
+
+##### 4.10.1.5 安装 ODB 基础运行时库
+
+ODB 编译器和 ODB 运行时库需要使用不同的 `bpkg` 构建目录。
+
+返回 ODB 构建目录：
+
+```bash
+cd ~/workspace/odb-build
+```
+
+创建运行时库构建环境：
+
+```bash
+bpkg create -d libodb-gcc-10 cc \
+  config.cxx=g++-10 \
+  config.cc.coptions=-O3 \
+  config.bin.rpath=/usr/lib \
+  config.install.root=/usr
+```
+
+进入运行时库构建目录：
+
+```bash
+cd ~/workspace/odb-build/libodb-gcc-10
+```
+
+添加 ODB beta 软件源：
+
+```bash
+bpkg add https://pkg.cppget.org/1/beta
+```
+
+更新软件包信息：
+
+```bash
+bpkg fetch
+```
+
+构建 ODB 基础运行时库：
+
+```bash
+bpkg build libodb
+```
+
+`libodb` 是 ODB 的基础运行时库，提供数据库对象、事务、查询和持久化等基础接口。
+
+##### 4.10.1.6 安装 MySQL 及其开发包
+
+安装 MySQL Server 和 MySQL 客户端开发包：
+
+```bash
+apt install -y \
+  mysql-server \
+  libmysqlclient-dev
+```
+
+启动 MySQL：
+
+```bash
+systemctl start mysql
+```
+
+设置 MySQL 开机启动：
+
+```bash
+systemctl enable mysql
+```
+
+也可以同时完成启动和开机启动设置：
+
+```bash
+systemctl enable --now mysql
+```
+
+检查 MySQL 服务状态：
+
+```bash
+systemctl status mysql --no-pager
+```
+
+检查 MySQL 是否安装成功：
+
+```bash
+mysql --version
+```
+
+##### 4.10.1.7 安装 ODB MySQL 运行时库
+
+进入 ODB 运行时库构建目录：
+
+```bash
+cd ~/workspace/odb-build/libodb-gcc-10
+```
+
+构建 MySQL 数据库支持库：
+
+```bash
+bpkg build libodb-mysql
+```
+
+`libodb-mysql` 用于连接 ODB 与 MySQL。C++ 程序在使用 ODB 操作 MySQL 时，需要链接该运行时库。
+
+##### 4.10.1.8 安装 ODB Boost 支持库
+
+部分数据类型需要使用 Boost，例如：
+
+```text
+boost::posix_time::ptime
+boost::gregorian::date
+```
+
+首先安装 Boost 开发包：
+
+```bash
+apt install -y libboost-all-dev
+```
+
+进入 ODB 运行时库构建目录：
+
+```bash
+cd ~/workspace/odb-build/libodb-gcc-10
+```
+
+构建 ODB Boost 支持库：
+
+```bash
+bpkg build libodb-boost
+```
+
+##### 4.10.1.9 安装全部 ODB 运行时库
+
+在运行时库构建目录中执行：
+
+```bash
+cd ~/workspace/odb-build/libodb-gcc-10
+```
+
+安装当前构建环境中的全部软件包及其依赖：
+
+```bash
+bpkg install --all --recursive
+```
+
+更新系统动态链接库缓存：
+
+```bash
+ldconfig
+```
+
+##### 4.10.1.10 检查 ODB 安装结果
+
+检查 ODB 编译器：
+
+```bash
+odb --version
+```
+
+检查 ODB 头文件：
+
+```bash
+ls /usr/include/odb
+```
+
+检查 MySQL 支持库头文件：
+
+```bash
+ls /usr/include/odb/mysql
+```
+
+检查 ODB 动态链接库：
+
+```bash
+ldconfig -p | grep odb
+```
+
+正常情况下应当能够看到以下动态链接库：
+
+```text
+libodb.so
+libodb-mysql.so
+libodb-boost.so
+```
+
+也可以直接查找动态库文件：
+
+```bash
+find /usr/lib /usr/local/lib \
+  -name 'libodb*.so*' \
+  2>/dev/null
+```
+
+最终使用以下命令统一验证安装结果：
+
+```bash
+b --version
+bpkg --version
+gcc-10 --version
+g++-10 --version
+odb --version
+mysql --version
+ldconfig -p | grep odb
+```
+
+如果以上命令均能正常执行，并且能够查询到 `libodb`、`libodb-mysql` 和 `libodb-boost`，则说明 ODB 编译器和运行时环境安装完成。
+
+##### 4.10.1.11 处理动态库无法找到的问题
+
+如果运行使用 ODB 的程序时出现以下错误：
+
+```text
+error while loading shared libraries:
+libodb.so: cannot open shared object file:
+No such file or directory
+```
+
+先更新动态链接库缓存：
+
+```bash
+ldconfig
+```
+
+检查动态库的位置：
+
+```bash
+find /usr/lib /usr/local/lib \
+  -name 'libodb*.so*' \
+  2>/dev/null
+```
+
+如果动态库安装在 `/usr/local/lib`，将该目录添加到系统动态库配置：
+
+```bash
+echo '/usr/local/lib' \
+  > /etc/ld.so.conf.d/local-lib.conf
+```
+
+重新更新缓存：
+
+```bash
+ldconfig
+```
+
+再次检查：
+
+```bash
+ldconfig -p | grep odb
+```
+
+也可以临时设置动态库搜索路径：
+
+```bash
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+```
+
+永久设置时执行：
+
+```bash
+echo 'export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH' \
+  >> ~/.bashrc
+source ~/.bashrc
+```
+
+
 ### 4.11 RabbitMQ
 
 ### 4.12 DMS
