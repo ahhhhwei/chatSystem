@@ -86,6 +86,7 @@ apt-get install libgflags-dev
    ```cpp
    #include <gflags/gflags.h>
    ```
+
 2. 定义参数
    利用 `gflags `提供的宏来定义参数。该宏的三个参数分别为命令行参数名，参数默认值，参数的帮助信息。例如：
 
@@ -105,9 +106,11 @@ apt-get install libgflags-dev
    DEFINE_double 
    DEFINE_string 
    ```
+
 3. 访问参数
 
    变量固定前缀 `FLAGS_` + 参数名
+
 4. 不同文件访问参数
    A.cc 定义了 `DEFINE_int32(port, 8080, "xxx");`
    B.cc 要读取它，用 `DECLARE_`：
@@ -116,21 +119,25 @@ apt-get install libgflags-dev
    DECLARE_int32(port);
    // 之后就能 FLAGS_port 使用
    ```
+
 5. 初始化参数
 
    ```cpp
    google::ParseCommandLineFlags(&argc, &argv, true);
    ```
+
 6. 运行参数
 
    `gflags` 也可以直接在命令行中设置运行参数：
 
    ![运行参数](./pic/运行参数.png "运行参数")
+
 7. 配置文件
 
    [配置文件](./tools-usage/gflags/main.conf) 不需要每次运行的时候都手动收入每个参数的数值，而是通过配置文件，一次编写，永久使用。注意配置文件中不要加多余的空格。
 
    ![配置文件](pic/配置文件.png)
+
 8. 特殊参数标识
 
    gflags也默认为我们提供了几个特殊的标识。
@@ -165,16 +172,19 @@ apt-get install libgtest-dev
    ```cpp
    #include <gtest/gtest.h>
    ```
+
 2. 框架初始化
 
    ```cpp
    testing::InitGoogleTest(&argc, argv);
    ```
+
 3. 调用测试样例
 
    ```cpp
    RUN_ALL_TESTS();
    ```
+
 4. TEST 宏
 
    ```cpp
@@ -184,6 +194,7 @@ apt-get install libgtest-dev
 
    1. TEST：主要用来创建一个简单测试，它定义了一个测试函数，在这个函数中可以使用任何C++代码并且使用框架提供的断言进行检查
    2. TEST_F：主要用来进行多样测试，适用于多个测试场景如果需要相同的数据配置的情况，即相同的数据测不同的行为
+
 5. 断言宏
 
    GTest 中的断言宏可以分为两类：
@@ -302,6 +313,7 @@ apt-get install libgtest-dev
   ```
 
   ![img](./pic/sync_logger.png)
+
 - 输出到文件
 
   ```cpp
@@ -341,6 +353,7 @@ apt-get install libgtest-dev
   ```
 
   ![img](./pic/log2file.png)
+
 - 异步工厂
 
   ```cpp
@@ -504,6 +517,7 @@ Etcd 是一个分布式、高可用的一致性键值存储系统，用于配置
    etcd --version
    etcdctl version
    ```
+
 2. 启动 Etcd 服务：
 
    ```bash
@@ -520,39 +534,40 @@ Etcd 是一个分布式、高可用的一致性键值存储系统，用于配置
    >
    > ```
    > mkdir -p /var/lib/etcd
-   >
+   > 
    > cat >/etc/systemd/system/etcd.service <<'EOF'
    > [Unit]
    > Description=etcd key-value store
    > Documentation=https://etcd.io/docs/
    > After=network-online.target
    > Wants=network-online.target
-   >
+   > 
    > [Service]
    > Type=notify
    > ExecStart=/usr/local/bin/etcd \
-   >   --name default \
-   >   --data-dir /var/lib/etcd \
-   >   --listen-client-urls http://0.0.0.0:2379 \
-   >   --advertise-client-urls http://127.0.0.1:2379 \
-   >   --listen-peer-urls http://127.0.0.1:2380 \
-   >   --initial-advertise-peer-urls http://127.0.0.1:2380 \
-   >   --initial-cluster default=http://127.0.0.1:2380 \
-   >   --initial-cluster-state new
+   > --name default \
+   > --data-dir /var/lib/etcd \
+   > --listen-client-urls http://0.0.0.0:2379 \
+   > --advertise-client-urls http://127.0.0.1:2379 \
+   > --listen-peer-urls http://127.0.0.1:2380 \
+   > --initial-advertise-peer-urls http://127.0.0.1:2380 \
+   > --initial-cluster default=http://127.0.0.1:2380 \
+   > --initial-cluster-state new
    > Restart=always
    > RestartSec=5
    > LimitNOFILE=40000
-   >
+   > 
    > [Install]
    > WantedBy=multi-user.target
    > EOF
    > ```
-   >
+
 3. 设置 Etcd 开机自启：
 
    ```bash
    systemctl enable etcd
    ```
+
 4. 运行验证：
 
    ```bash
@@ -794,11 +809,13 @@ int Add (int num1, int num2)
 #### 4.5.1 brpc 的安装
 
 安装系统依赖：
+
 ```bash
 apt-get install -y git g++ make libssl-dev libprotobuf-dev libprotoc-dev protobuf-compiler libleveldb-dev
 ```
 
 编译安装 brpc：
+
 ```bash
 git clone https://github.com/apache/brpc.git
 cd brpc
@@ -808,6 +825,7 @@ make && make install
 ```
 
 #### 4.5.2 brpc 类与接口的说明
+
 ##### 4.5.2.1 日志输出类
 
 头文件：`#include <butil/logging.h>`
@@ -859,11 +877,13 @@ service EchoService {
 ```
 
 然后执行以下命令生成 [`main.pb.cc`](./tools-usage/brpc/main.pb.cc) 和 [`main.pb.h`](./tools-usage/brpc/main.pb.h) 两个文件。
+
 ```bash
 protoc --cpp_out=./ main.proto 
 ```
 
 ##### 4.5.2.3 服务端核心类
+
 ```cpp
 namespace brpc {
 // 服务配置项
@@ -934,6 +954,7 @@ class Controller : public google::protobuf::RpcController {
 ```
 
 ##### 4.5.2.4 客户端核心类
+
 ```cpp
 namespace brpc {
 // Channel通道配置
@@ -957,6 +978,7 @@ class Channel : public ChannelBase {
 ```
 
 #### 4.5.3 RPC 调用实现样例
+
 [服务端：](./tools-usage/brpc/server.cc)
 
 1. 创建 rpc 服务子类继承 pb 中的 EchoService 服务类，并实现内部的业务接口逻辑
@@ -965,6 +987,7 @@ class Channel : public ChannelBase {
 4. 启动服务器
 
 [客户端：](./tools-usage/brpc/client.cc)
+
 1. 创建网络通信信道
 2. 实例化 pb 中的 Echo_Service_Stub 类对象
 3. 发起 rpc 请求，获取响应进行处理
@@ -973,6 +996,7 @@ class Channel : public ChannelBase {
 ![rpc](./pic/rpc.gif)
 
 #### 4.5.4 brpc 二次封装
+
 brpc 本质上来说是 rpc 调用，但是向谁调用什么服务得管理起来——搭配 etcd 实现注册中心管理（通过注册中心，能够获知谁能提供什么服务，进而能够连接它发起这个服务调用）
 
 封装思想：主要是管理起来网络通信的信道——将不同服务节点主机的通信信道管理起来。封装的是服务节点信道的管理，而不是 rpc 调用的管理
@@ -995,6 +1019,7 @@ brpc 本质上来说是 rpc 调用，但是向谁调用什么服务得管理起�
 Elasticsearch 是一个分布式搜索与分析引擎。它的主要功能是存储和搜索，文档经过分词、倒排索引后写入数据库，查询时使用相同分词器分词，通过倒排索引找到候选文档，然后计算相关度分数并排序返回。
 
 #### 4.6.1 es 的安装
+
 ```bash
 echo "deb [trusted=yes] https://mirrors.tuna.tsinghua.edu.cn/elasticstack/8.x/apt/ stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
 
@@ -1003,6 +1028,7 @@ sudo apt-get install -y elasticsearch
 ```
 
 安装好后启动：
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now elasticsearch.service
@@ -1015,6 +1041,7 @@ sudo systemctl status elasticsearch.service
 ![](./pic/验证安装es)
 
 设置密码：
+
 ```bash
 /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -i
 ```
@@ -1022,6 +1049,7 @@ sudo systemctl status elasticsearch.service
 安装 ik 分词器插件，注意，插件的版本号必须和上面 es 的版本号一致。
 
 > 由于网络原因，我是在 github 上下载好压缩包后上传服务器解压安装的
+>
 > ```bash
 > /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch file:///root/Desktop/chatSystem/elasticsearch-analysis-ik-8.19.16.zip
 > ```
@@ -1041,11 +1069,13 @@ cluster.initial_master_nodes: ["node-1"]
 ```
 
 安装 `kibana`
+
 ```shell
 apt install kibana
 ```
 
 配置kibana
+
 ```shell
 vim /etc/kibana/kibana.yml
 ```
@@ -1091,6 +1121,7 @@ make install
 ```
 
 #### 4.6.2 es 的核心概念
+
 Elasticsearch 存储数据的结构可以记成：
 
 ```
@@ -1105,6 +1136,7 @@ Elasticsearch 存储数据的结构可以记成：
 ```
 
 以聊天系统为例：
+
 ```
 索引：chat_messages
 
@@ -1124,6 +1156,7 @@ Elasticsearch 存储数据的结构可以记成：
 ```
 
 其中：
+
 ```
 chat_messages                  → 索引
 一整条 JSON                    → 文档
@@ -1185,15 +1218,17 @@ ES 本质上提供的是 HTTP REST 接口，elasticlient 完成 HTTP 请求。�
 - 创建 ES 客户端对象
 
   使用 `elasticlient::Client` 的构造函数：
+
   ```cpp
   #include <elasticlient/client.h>
-
+  
   elasticlient::Client client({
       "http://127.0.0.1:9200/"
   });
   ```
 
   也可以传多个 ES 节点：客户端会在节点之间尝试请求，所有节点都无法连结时，会抛异常
+
   ```cpp
   elasticlient::Client client({
     "http://192.168.1.101:9200/",
@@ -1201,7 +1236,9 @@ ES 本质上提供的是 HTTP REST 接口，elasticlient 完成 HTTP 请求。�
     "http://192.168.1.103:9200/"
   });
   ```
+
   还可以带超时时间：
+
   ```cpp
   elasticlient::Client client(
     {"http://127.0.0.1:9200/"},
@@ -1210,20 +1247,22 @@ ES 本质上提供的是 HTTP REST 接口，elasticlient 完成 HTTP 请求。�
   ```
 
 - 四个客户端接口：
-  
+
   以下四个接口均返回 `cpr::Response`。`response.status_code` 可以获取 HTTP状态码；`response.text` 可以获取 ES 返回的 JSON 字符串
-  
+
   - search：条件搜索
+
     ```cpp
     cpr::Response search(
-    const std::string& indexName, 	//  ES 索引名
-    const std::string& docType,		// 文档类型，ES 7 中通常写 "_doc"
-    const std::string& body,		// 查询 JSON 字符串
+    const std::string& indexName,   //  ES 索引名
+    const std::string& docType,   // 文档类型，ES 7 中通常写 "_doc"
+    const std::string& body,    // 查询 JSON 字符串
     const std::string& routing = "" // 自定义路由，一般不传
     );
     ```
-    
+
   - get：根据 `_id` 查询文档
+
     ```cpp
     cpr::Response get(
       const std::string& indexName,
@@ -1232,14 +1271,14 @@ ES 本质上提供的是 HTTP REST 接口，elasticlient 完成 HTTP 请求。�
       const std::string& routing = ""
     );
     ```
-    
+
     ```cpp
     cpr::Response response = client.get("user", "_doc", "1");
     // GET /user/_doc/1
     ```
-    
+
   - index：新增或覆盖文档（不存在，新增；存在，覆盖）
-    
+
     ```cpp
     cpr::Response index(
         const std::string& indexName,
@@ -1249,14 +1288,14 @@ ES 本质上提供的是 HTTP REST 接口，elasticlient 完成 HTTP 请求。�
         const std::string& routing = ""
     );
     ```
-    
+
     ```cpp
     cpr::Response response = client.index("user", "_doc", "1", body);
     // 大致对应：PUT /user/_doc/1
     ```
-    
+
   - remove：根据 _id 删除文档
-    
+
     ```cpp
     cpr::Response remove(
     const std::string& indexName,
@@ -1265,12 +1304,12 @@ ES 本质上提供的是 HTTP REST 接口，elasticlient 完成 HTTP 请求。�
     const std::string& routing = ""
     );
     ```
-    
+
     ```cpp
     cpr::Response response = client.remove("user", "_doc", "1");
     // DELETE /user/_doc/
     ```
-  
+
 - JsonCpp 的作用：
 
   静态查询可以直接使用原始字符串：`R"( ... )"` 是 C++ 原始字符串。但是实际情况中，查询条件通常来自变量，手工拼接 JSON 很危险，因此使用 JsonCpp。
@@ -1453,9 +1492,9 @@ ES 本质上提供的是 HTTP REST 接口，elasticlient 完成 HTTP 请求。�
   ![](./pic/es插入数据.png)
 
   然后执行程序
-  
+
   ![](./pic/es客户端.png)
-  
+
 - 二次封装
 
   封装四个操作：索引创建、数据新增，数据查询，数据删除。主要完成的是请求正文的构造过程。
@@ -1654,6 +1693,7 @@ int main()
     return 0;
 }
 ```
+
 ![](./pic/websocket.png)
 
 ### 4.9  redis
@@ -1734,13 +1774,13 @@ redis-cli
 
   ```cpp
   struct ConnectionOptions {
-      std::string host;				// redis 服务器的 ip 地址
-      int port = 6379;				// redis 的默认端口号
-      std::string path;				// Unix Domain Socket（Unix 域套接字）的文件路径
+      std::string host;       // redis 服务器的 ip 地址
+      int port = 6379;        // redis 的默认端口号
+      std::string path;       // Unix Domain Socket（Unix 域套接字）的文件路径
       std::string user = "default";   // redis 默认用户名
-      std::string password;			// redis 配置认证
-      int db = 0;						// redis 默认提供编号数据库，不同数据库之间的键相互隔离
-      bool keep_alive = false;		// 是否启用 TCP Keepalive，用来检测长期空闲连接是否已经失效
+      std::string password;     // redis 配置认证
+      int db = 0;           // redis 默认提供编号数据库，不同数据库之间的键相互隔离
+      bool keep_alive = false;    // 是否启用 TCP Keepalive，用来检测长期空闲连接是否已经失效
   };
   ```
 
@@ -1748,7 +1788,7 @@ redis-cli
 
   ```cpp
   struct ConnectionPoolOptions { 
-  	std::size_t size = 1; //最大连接数量 
+    std::size_t size = 1; //最大连接数量 
   } 
   ```
 
@@ -2324,6 +2364,80 @@ echo 'export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH' \
   >> ~/.bashrc
 source ~/.bashrc
 ```
+
+##### 4.10.1.12 配置 MySQL
+
+```bash
+vim /etc/mysql/my.cnf
+```
+
+在最后加入下面内容：
+
+```bash
+[client]
+default-character-set=utf8
+[mysql]
+default-character-set=utf8
+[mysqld]
+character-set-server=utf8
+bind-address = 0.0.0.0
+```
+
+修改密码：
+
+```bash
+cat /etc/mysql/debian.cnf 
+```
+
+![](./pic/modify-password.png)
+
+```bash
+mysql -u debian-sys-maint -p
+```
+
+![](./pic/mysql-login.png)
+
+```mysql
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'wenjiawei';
+FLUSH PRIVILEGES;
+quit
+```
+
+重启 MySQL，用密码登陆：
+![](./pic/restart-login-with-password.png)
+
+
+#### 4.10.2 ODB 测试
+
+1. 先创建 [person.hxx](./tools-usage/odb/person.hxx) 文件
+
+2. 使用 ODB 编译器生成代码：
+
+   ```bash
+   odb -d mysql \
+       --std c++11 \
+       --generate-query \
+       --generate-schema \
+       --profile boost/date-time \
+       person.hxx
+   ```
+
+3. 执行成功后，可以看到 `person.hxx` `person-odb.hxx` `person-odb.ixx` `person-odb.cxx` `person.sql`，其中 `person.hxx` 是我们自己写的实体类，`person-odb.hxx` `person-odb.ixx` `person-odb.cxx` 是 ODB 自动生成的数据库访问代码，`person.sql` 是 ODB 自动生成的数据库建表 SQL。
+
+4. 创建 MySQL 数据库 `mytest`
+
+5. 导入 ODB 自动生成的表
+
+   ```bash
+   mysql -uroot -p mytest < person.sql
+   ```
+
+   进入数据库检查：
+   ![](./pic/检查.png)
+
+6. 创建 [main.cc](./tools-usage/odb/main.cc)，创建 [makefile](./tools-usage/odb/makefile) 并编译
+7. 运行：
+   ![](./pic/run-odbTestCode.png)
 
 
 ### 4.11 RabbitMQ
