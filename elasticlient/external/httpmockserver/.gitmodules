@@ -1,6 +1,0 @@
-[submodule "external/cpr"]
-	path = external/cpr
-	url = https://github.com/whoshuu/cpr.git
-[submodule "external/gtest"]
-	path = external/gtest
-	url = https://github.com/google/googletest.git
