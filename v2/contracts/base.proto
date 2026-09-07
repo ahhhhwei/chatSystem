@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+// 相当于命名空间
+package ahwei_im;
+
+// cc 指 C++：主要用于让 protobuf 为 service 定义生成 C++ 的通用 RPC 接口
+option cc_generic_services = true;
+
+// message 相当于结构体，用来描述序列化传输的数据格式
+message FileMessageInfo {
+    // =1：protobuf 里的字段编号，网络数据里面不会保存字段名字，主要靠“字段编号+类型+数据”识别
+    // 一旦发布，不可随意更改，否则可能破坏协议兼容性
+    string file_id = 1;
+    int64 file_size = 2;
+    string file_name = 3;
+    bytes file_contents = 4;
+}
+
+message FileDownloadData {
+    string file_id = 1;
+    bytes file_content = 2;
+}
+
+message FileUploadData {
+    string file_name = 1;
+    int64 file_size = 2;
+    bytes file_content = 3;
+}
