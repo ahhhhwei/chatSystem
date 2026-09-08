@@ -26,6 +26,7 @@ protobuf_generate_cpp(
     CHAT_PROTO_HEADERS
     contracts/base.proto
     contracts/file.proto
+    contracts/message.proto
 )
 
 add_library(chat_contracts
@@ -53,3 +54,4 @@ target_link_libraries(chat_brpc
 include(CTest)
 
 add_subdirectory(services/file)
+add_subdirectory(services/message)

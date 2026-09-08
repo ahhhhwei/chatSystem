@@ -30,19 +30,48 @@ int main(int argc, char* argv[]) {
     ahwei_im::FileService_Stub stub(&channel);
     const std::string original = "hello from FileServer\n";
 
+    // 准备 req
     ahwei_im::PutSingleFileReq put_request;
     put_request.set_request_id("file-roundtrip-put");
     put_request.mutable_file_data()->set_file_name("hello.txt");
     put_request.mutable_file_data()->set_file_size(original.size());
     put_request.mutable_file_data()->set_file_content(original);
 
+    // 准备 res
     ahwei_im::PutSingleFileRsp put_response;
+    // 这一次 PutSingleFile RPC 调用的状态。
     brpc::Controller put_controller;
+    // stub.PutSingleFile()
+    //         ↓
+    // protobuf 序列化 put_request
+    //         ↓
+    // brpc::Channel
+    //         ↓
+    //       网络
+    //         ↓
+    // 127.0.0.1:10002
+    //         ↓
+    //   brpc::Server
+    //         ↓
+    //  找到 FileService
+    //         ↓
+    // FileServiceImpl::PutSingleFile()
+    //         ↓
+    // store_.put()
+    //         ↓
+    //      写入磁盘
+    //         ↓
+    //    设置 response
+    //         ↓
+    //      网络返回
+    //         ↓
+    // 填充 put_response
     stub.PutSingleFile(
         &put_controller,
         &put_request,
         &put_response,
         nullptr);
+    //      网络 / rpc 框架失败 || 业务失败
     if (put_controller.Failed() || !put_response.success()) {
         std::cerr << "put failed: "
                   << (put_controller.Failed()
@@ -52,6 +81,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // 测试下载
     ahwei_im::GetSingleFileReq get_request;
     get_request.set_request_id("file-roundtrip-get");
     get_request.set_file_id(put_response.file_info().file_id());
