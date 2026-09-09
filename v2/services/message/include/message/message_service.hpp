@@ -13,8 +13,8 @@ namespace chat::message {
 class MessageServiceImpl final : public ahwei_im::MsgStorageService {
 public:
     MessageServiceImpl(
-        std::shared_ptr<MessageRepository> repository,
-        std::shared_ptr<FileClient> file_client);
+        std::shared_ptr<MessageRepository> repository, // 消息存储，负责保存消息/查询消息
+        std::shared_ptr<FileClient> file_client);      // 文件客户端，负责上传/下载文件
 
     // 与 v1 的 RabbitMQ 消费回调 onMessage 对应。后续接入 MQ 时可直接
     // 把消费到的 MessageInfo 交给这两个接口。

@@ -13,6 +13,7 @@ class FileClient {
 public:
     virtual ~FileClient() = default;
 
+    // 上传文件
     virtual bool put(
         const std::string& request_id,
         const std::string& file_name,
@@ -20,6 +21,7 @@ public:
         std::string& file_id,
         std::string& error) = 0;
 
+    // 批量下载文件，一次拿多个文件，减少rpc次数
     virtual bool get_multi(
         const std::string& request_id,
         const std::vector<std::string>& file_ids,

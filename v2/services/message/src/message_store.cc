@@ -21,12 +21,16 @@ bool chronological(
     return left.message_id() < right.message_id();
 }
 
+// 把一个32位整数size拆成4字节，并且按大端序存入 std::array<char, 4>（一个固定长度为4的数组，每个元素类型为char
+// 大端序：高位字节放在低地址
+// 小端序：低位字节放在低地址
 std::array<char, 4> encode_size(std::uint32_t size) {
     return {
-        static_cast<char>((size >> 24U) & 0xffU),
-        static_cast<char>((size >> 16U) & 0xffU),
-        static_cast<char>((size >> 8U) & 0xffU),
-        static_cast<char>(size & 0xffU),
+        // U是整数字面量的后缀，表示这是一个unsigned int，即无符号整数
+        static_cast<char>((size >> 24U) & 0xffU), // 取最高8位 （32位整数右移24位，然后留下最低8位）
+        static_cast<char>((size >> 16U) & 0xffU), // 取次高8位
+        static_cast<char>((size >> 8U) & 0xffU),  // 取次次高8位
+        static_cast<char>(size & 0xffU),          // 取末8位  
     };
 }
 
@@ -66,10 +70,12 @@ bool MessageStore::append(
     const ahwei_im::MessageInfo& message,
     std::string& error) {
     error.clear();
+    // 收到消息后，检查消息是否合法
     if (!validate(message, error)) {
         return false;
     }
 
+    // 序列化
     std::string serialized;
     if (!message.SerializeToString(&serialized)) {
         error = "cannot serialize message";
@@ -86,6 +92,7 @@ bool MessageStore::append(
         return false;
     }
 
+    // 写入文件
     std::ofstream output(
         storage_file_,
         std::ios::binary | std::ios::app);
