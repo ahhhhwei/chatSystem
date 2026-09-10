@@ -21,6 +21,7 @@ add_executable(file_server
 target_link_libraries(file_server
     PRIVATE
         file_rpc_service
+        chat_infrastructure
         ${GFLAGS_LIBRARY}
         spdlog::spdlog
 )

@@ -1,8 +1,9 @@
 add_library(friend_store
     src/friend_store.cc
+    src/mysql_friend_repository.cc
 )
 target_include_directories(friend_store PUBLIC include)
-target_link_libraries(friend_store PUBLIC chat_contracts)
+target_link_libraries(friend_store PUBLIC chat_contracts chat_infrastructure)
 
 add_library(friend_dependencies
     src/dependencies.cc
@@ -12,6 +13,7 @@ target_link_libraries(friend_dependencies
     PUBLIC
         chat_brpc
         chat_contracts
+        chat_infrastructure
 )
 
 add_library(friend_rpc_service

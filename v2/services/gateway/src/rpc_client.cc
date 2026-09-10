@@ -1,4 +1,5 @@
 #include "gateway/rpc_client.hpp"
+#include "chat/infra/brpc_resolver.hpp"
 
 #include <brpc/channel.h>
 #include <brpc/controller.h>
@@ -11,18 +12,14 @@ namespace chat::gateway {
 
 class BrpcRpcClient::ChannelHolder {
 public:
-    ChannelHolder(const std::string& address, int timeout_ms) {
-        brpc::ChannelOptions options;
-        options.protocol = "baidu_std";
-        options.timeout_ms = timeout_ms;
-        // Gateway 的接口包含注册、改资料、发消息等非幂等操作，禁止自动重试。
-        options.max_retry = 0;
-        if (channel.Init(address.c_str(), &options) != 0) {
-            throw std::runtime_error("cannot initialize RPC channel: " + address);
-        }
-    }
+    explicit ChannelHolder(const RpcEndpoint& endpoint)
+        : resolver(endpoint.resolver
+              ? endpoint.resolver
+              : std::make_shared<infra::StaticEndpointResolver>(endpoint.address)),
+          timeout_ms(endpoint.timeout_ms) {}
 
-    brpc::Channel channel;
+    std::shared_ptr<infra::EndpointResolver> resolver;
+    int timeout_ms;
 };
 
 namespace {
@@ -45,10 +42,8 @@ BrpcRpcClient::BrpcRpcClient(const RpcEndpoints& endpoints) {
             endpoints.speech,
         };
     for (std::size_t index = 0; index < configured.size(); ++index) {
-        if (!configured[index].address.empty()) {
-            channels_[index] = std::make_unique<ChannelHolder>(
-                configured[index].address,
-                configured[index].timeout_ms);
+        if (!configured[index].address.empty() || configured[index].resolver) {
+            channels_[index] = std::make_unique<ChannelHolder>(configured[index]);
         }
     }
 }
@@ -68,7 +63,10 @@ bool BrpcRpcClient::call(
     }
 
     brpc::Controller controller;
-    channels_[index]->channel.CallMethod(
+    auto channel = infra::make_brpc_channel(
+        channels_[index]->resolver, channels_[index]->timeout_ms, 0, error);
+    if (!channel) return false;
+    channel->CallMethod(
         &method,
         &controller,
         &request,

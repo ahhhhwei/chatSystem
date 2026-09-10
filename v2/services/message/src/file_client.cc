@@ -1,6 +1,7 @@
 #include "message/file_client.hpp"
 
 #include "file.pb.h"
+#include "chat/infra/brpc_resolver.hpp"
 
 #include <brpc/controller.h>
 
@@ -11,16 +12,15 @@ namespace chat::message {
 
 BrpcFileClient::BrpcFileClient(
     std::string server_address,
-    std::int32_t timeout_ms) {
-    brpc::ChannelOptions options;
-    options.protocol = "baidu_std"; // brpc 默认的二进制协议
-    options.timeout_ms = timeout_ms;
-    options.max_retry = 3;
-    if (channel_.Init(server_address.c_str(), &options) != 0) {
-        throw std::runtime_error(
-            "cannot initialize FileServer channel: " + server_address);
-    }
-}
+    std::int32_t timeout_ms)
+    : BrpcFileClient(
+          std::make_shared<infra::StaticEndpointResolver>(std::move(server_address)),
+          timeout_ms) {}
+
+BrpcFileClient::BrpcFileClient(
+    std::shared_ptr<infra::EndpointResolver> resolver,
+    std::int32_t timeout_ms)
+    : resolver_(std::move(resolver)), timeout_ms_(timeout_ms) {}
 
 bool BrpcFileClient::put(
     const std::string& request_id,
@@ -47,7 +47,9 @@ bool BrpcFileClient::put(
     // 创建 rpc 控制器
     brpc::Controller controller;
     // 创建 stub
-    ahwei_im::FileService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 3, error);
+    if (!channel) return false;
+    ahwei_im::FileService_Stub stub(channel.get());
     // stub 调用服务器：FileServer.PutSingleFile()
     stub.PutSingleFile(&controller, &request, &response, nullptr);
     if (controller.Failed()) {
@@ -92,7 +94,9 @@ bool BrpcFileClient::get_multi(
 
     ahwei_im::GetMultiFileRsp response;
     brpc::Controller controller;
-    ahwei_im::FileService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 3, error);
+    if (!channel) return false;
+    ahwei_im::FileService_Stub stub(channel.get());
     // 调用rpc
     stub.GetMultiFile(&controller, &request, &response, nullptr);
     if (controller.Failed()) {

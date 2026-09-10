@@ -2,6 +2,7 @@
 
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
+#include "chat/infra/etcd.hpp"
 
 #include <array>
 #include <memory>
@@ -34,6 +35,7 @@ public:
 struct RpcEndpoint {
     std::string address;
     int timeout_ms = 3000;
+    std::shared_ptr<infra::EndpointResolver> resolver;
 };
 
 struct RpcEndpoints {

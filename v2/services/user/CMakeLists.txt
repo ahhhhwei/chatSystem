@@ -1,16 +1,20 @@
 add_library(user_store
     src/user_store.cc
+    src/mysql_user_repository.cc
+    src/indexed_user_repository.cc
 )
 target_include_directories(user_store PUBLIC include)
-target_link_libraries(user_store PUBLIC chat_contracts)
+target_link_libraries(user_store PUBLIC chat_contracts chat_infrastructure)
 
 add_library(user_security
     src/security.cc
+    src/redis_security.cc
 )
 target_include_directories(user_security PUBLIC include)
 target_link_libraries(user_security
     PUBLIC
         OpenSSL::Crypto
+        chat_infrastructure
         spdlog::spdlog
 )
 
@@ -22,6 +26,7 @@ target_link_libraries(user_file_client
     PUBLIC
         chat_brpc
         chat_contracts
+        chat_infrastructure
 )
 
 add_library(user_rpc_service

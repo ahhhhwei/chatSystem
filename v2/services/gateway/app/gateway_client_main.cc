@@ -14,6 +14,7 @@
 #include <exception>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unistd.h>
 
 DEFINE_string(gateway_host, "127.0.0.1", "Gateway HTTP host");
@@ -23,7 +24,7 @@ DEFINE_string(operation, "smoke", "Client operation: smoke");
 
 namespace {
 
-constexpr const char* kContentType = "application/x-protbuf";
+constexpr const char* kContentType = "application/x-protobuf";
 
 template <typename Request, typename Response>
 Response post(
@@ -275,10 +276,13 @@ void run_smoke(httplib::Client& client) {
     recent_request.set_session_id(bob_login.login_session_id());
     recent_request.set_chat_session_id(group_id);
     recent_request.set_msg_count(10);
-    const auto recent = post<
-        ahwei_im::GetRecentMsgReq,
-        ahwei_im::GetRecentMsgRsp>(
-        client, "/service/message_storage/get_recent", recent_request);
+    ahwei_im::GetRecentMsgRsp recent;
+    for (int attempt = 0; attempt < 100; ++attempt) {
+        recent = post<ahwei_im::GetRecentMsgReq, ahwei_im::GetRecentMsgRsp>(
+            client, "/service/message_storage/get_recent", recent_request);
+        if (recent.msg_list_size() != 0) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
     if (recent.msg_list_size() != 1 ||
         recent.msg_list(0).message().string_message().content() != message_text) {
         throw std::runtime_error("message was not stored through GatewayServer");

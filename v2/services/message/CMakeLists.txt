@@ -1,8 +1,10 @@
 add_library(message_store
     src/message_store.cc
+    src/mysql_message_repository.cc
+    src/indexed_message_repository.cc
 )
 target_include_directories(message_store PUBLIC include)
-target_link_libraries(message_store PUBLIC chat_contracts)
+target_link_libraries(message_store PUBLIC chat_contracts chat_infrastructure)
 
 add_library(message_file_client
     src/file_client.cc
@@ -12,6 +14,7 @@ target_link_libraries(message_file_client
     PUBLIC
         chat_brpc
         chat_contracts
+        chat_infrastructure
 )
 
 add_library(message_rpc_service

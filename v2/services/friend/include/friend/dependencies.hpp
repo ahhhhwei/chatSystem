@@ -1,11 +1,13 @@
 #pragma once
 
 #include "base.pb.h"
+#include "chat/infra/etcd.hpp"
 
 #include <brpc/channel.h>
 
 #include <cstdint>
 #include <optional>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -48,6 +50,8 @@ public:
 class BrpcUserDirectory final : public UserDirectory {
 public:
     BrpcUserDirectory(std::string server_address, std::int32_t timeout_ms);
+    BrpcUserDirectory(std::shared_ptr<infra::EndpointResolver> resolver,
+        std::int32_t timeout_ms);
 
     bool get_multi(
         const std::string& request_id,
@@ -67,13 +71,16 @@ public:
         std::string& error) override;
 
 private:
-    brpc::Channel channel_;
+    std::shared_ptr<infra::EndpointResolver> resolver_;
+    std::int32_t timeout_ms_;
 };
 
 class BrpcRecentMessageClient final : public RecentMessageClient {
 public:
     BrpcRecentMessageClient(
         std::string server_address,
+        std::int32_t timeout_ms);
+    BrpcRecentMessageClient(std::shared_ptr<infra::EndpointResolver> resolver,
         std::int32_t timeout_ms);
 
     bool latest(
@@ -83,7 +90,8 @@ public:
         std::string& error) override;
 
 private:
-    brpc::Channel channel_;
+    std::shared_ptr<infra::EndpointResolver> resolver_;
+    std::int32_t timeout_ms_;
 };
 
 }  // namespace chat::friend_service

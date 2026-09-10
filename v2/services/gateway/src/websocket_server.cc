@@ -148,6 +148,11 @@ void WebSocketServer::set_disconnect_handler(DisconnectHandler handler) {
     disconnect_handler_ = std::move(handler);
 }
 
+void WebSocketServer::set_presence_handler(PresenceHandler handler) {
+    std::lock_guard<std::mutex> lock(callbacks_mutex_);
+    presence_handler_ = std::move(handler);
+}
+
 bool WebSocketServer::start(std::string& error) {
     if (running_.exchange(true)) {
         error = "WebSocket server is already running";
@@ -598,6 +603,12 @@ void WebSocketServer::bind_authenticated(
     if (previous) {
         close_connection(previous, 1008U, "replaced by a newer connection");
     }
+    PresenceHandler presence;
+    {
+        std::lock_guard<std::mutex> lock(callbacks_mutex_);
+        presence = presence_handler_;
+    }
+    if (presence) presence(connection->user_id, connection->session_id, true);
     spdlog::info("WebSocket user online: {}", connection->user_id);
 }
 
@@ -629,6 +640,14 @@ void WebSocketServer::remove_connection(
     }
     if (revoke && handler) {
         handler(session_id);
+    }
+    PresenceHandler presence;
+    {
+        std::lock_guard<std::mutex> lock(callbacks_mutex_);
+        presence = presence_handler_;
+    }
+    if (connection->authenticated && presence) {
+        presence(connection->user_id, connection->session_id, false);
     }
     if (connection->authenticated) {
         spdlog::info("WebSocket user offline: {}", connection->user_id);

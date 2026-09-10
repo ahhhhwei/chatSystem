@@ -6,6 +6,7 @@ target_link_libraries(transmit_dependencies
     PUBLIC
         chat_brpc
         chat_contracts
+        chat_infrastructure
 )
 
 add_library(transmit_rpc_service

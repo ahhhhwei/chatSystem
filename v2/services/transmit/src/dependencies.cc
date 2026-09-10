@@ -3,6 +3,7 @@
 #include "message.pb.h"
 #include "friend.pb.h"
 #include "user.pb.h"
+#include "chat/infra/brpc_resolver.hpp"
 
 #include <brpc/controller.h>
 
@@ -32,16 +33,15 @@ bool IdentityUserClient::get_user(
 
 BrpcUserClient::BrpcUserClient(
     std::string server_address,
-    std::int32_t timeout_ms) {
-    brpc::ChannelOptions options;
-    options.protocol = "baidu_std";
-    options.timeout_ms = timeout_ms;
-    options.max_retry = 3;
-    if (channel_.Init(server_address.c_str(), &options) != 0) {
-        throw std::runtime_error(
-            "cannot initialize UserServer channel: " + server_address);
-    }
-}
+    std::int32_t timeout_ms)
+    : BrpcUserClient(
+          std::make_shared<infra::StaticEndpointResolver>(std::move(server_address)),
+          timeout_ms) {}
+
+BrpcUserClient::BrpcUserClient(
+    std::shared_ptr<infra::EndpointResolver> resolver,
+    std::int32_t timeout_ms)
+    : resolver_(std::move(resolver)), timeout_ms_(timeout_ms) {}
 
 bool BrpcUserClient::get_user(
     const std::string& request_id,
@@ -60,7 +60,9 @@ bool BrpcUserClient::get_user(
     request.set_user_id(user_id);
     ahwei_im::GetUserInfoRsp response;
     brpc::Controller controller;
-    ahwei_im::UserService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 3, error);
+    if (!channel) return false;
+    ahwei_im::UserService_Stub stub(channel.get());
     stub.GetUserInfo(&controller, &request, &response, nullptr);
     if (controller.Failed()) {
         error = controller.ErrorText();
@@ -165,16 +167,15 @@ void FileSessionMemberRepository::load() {
 
 BrpcFriendSessionMemberRepository::BrpcFriendSessionMemberRepository(
     std::string server_address,
-    std::int32_t timeout_ms) {
-    brpc::ChannelOptions options;
-    options.protocol = "baidu_std";
-    options.timeout_ms = timeout_ms;
-    options.max_retry = 3;
-    if (channel_.Init(server_address.c_str(), &options) != 0) {
-        throw std::runtime_error(
-            "cannot initialize FriendServer channel: " + server_address);
-    }
-}
+    std::int32_t timeout_ms)
+    : BrpcFriendSessionMemberRepository(
+          std::make_shared<infra::StaticEndpointResolver>(std::move(server_address)),
+          timeout_ms) {}
+
+BrpcFriendSessionMemberRepository::BrpcFriendSessionMemberRepository(
+    std::shared_ptr<infra::EndpointResolver> resolver,
+    std::int32_t timeout_ms)
+    : resolver_(std::move(resolver)), timeout_ms_(timeout_ms) {}
 
 bool BrpcFriendSessionMemberRepository::members(
     const std::string& chat_session_id,
@@ -192,7 +193,9 @@ bool BrpcFriendSessionMemberRepository::members(
     request.set_chat_session_id(chat_session_id);
     ahwei_im::GetChatSessionMemberIdsRsp response;
     brpc::Controller controller;
-    ahwei_im::FriendService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 3, error);
+    if (!channel) return false;
+    ahwei_im::FriendService_Stub stub(channel.get());
     stub.GetChatSessionMemberIds(&controller, &request, &response, nullptr);
     if (controller.Failed()) {
         error = controller.ErrorText();
@@ -210,18 +213,15 @@ bool BrpcFriendSessionMemberRepository::members(
 
 BrpcMessagePublisher::BrpcMessagePublisher(
     std::string server_address,
-    std::int32_t timeout_ms) {
-    brpc::ChannelOptions options;
-    options.protocol = "baidu_std";
-    options.timeout_ms = timeout_ms;
-    // StoreMessage 会产生文件上传等副作用，不在传输层自动重试。
-    options.max_retry = 0;
-    if (channel_.Init(server_address.c_str(), &options) != 0) {
-        throw std::runtime_error(
-            "cannot initialize MessageStoreServer channel: " +
-            server_address);
-    }
-}
+    std::int32_t timeout_ms)
+    : BrpcMessagePublisher(
+          std::make_shared<infra::StaticEndpointResolver>(std::move(server_address)),
+          timeout_ms) {}
+
+BrpcMessagePublisher::BrpcMessagePublisher(
+    std::shared_ptr<infra::EndpointResolver> resolver,
+    std::int32_t timeout_ms)
+    : resolver_(std::move(resolver)), timeout_ms_(timeout_ms) {}
 
 bool BrpcMessagePublisher::publish(
     const std::string& request_id,
@@ -234,7 +234,9 @@ bool BrpcMessagePublisher::publish(
 
     ahwei_im::StoreMessageRsp response;
     brpc::Controller controller;
-    ahwei_im::MsgStorageService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 0, error);
+    if (!channel) return false;
+    ahwei_im::MsgStorageService_Stub stub(channel.get());
     stub.StoreMessage(&controller, &request, &response, nullptr);
     if (controller.Failed()) {
         error = controller.ErrorText();
@@ -245,6 +247,21 @@ bool BrpcMessagePublisher::publish(
         return false;
     }
     return true;
+}
+
+RabbitMqMessagePublisher::RabbitMqMessagePublisher(infra::RabbitMqConfig config)
+    : publisher_(std::move(config)) {}
+
+bool RabbitMqMessagePublisher::publish(
+    const std::string&,
+    const ahwei_im::MessageInfo& message,
+    std::string& error) {
+    std::string payload;
+    if (!message.SerializeToString(&payload)) {
+        error = "cannot serialize MessageInfo for RabbitMQ";
+        return false;
+    }
+    return publisher_.publish(payload, error);
 }
 
 }  // namespace chat::transmit

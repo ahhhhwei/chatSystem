@@ -1,6 +1,7 @@
 #include "user/avatar_file_client.hpp"
 
 #include "file.pb.h"
+#include "chat/infra/brpc_resolver.hpp"
 
 #include <brpc/controller.h>
 
@@ -11,16 +12,15 @@ namespace chat::user {
 
 BrpcAvatarFileClient::BrpcAvatarFileClient(
     std::string server_address,
-    std::int32_t timeout_ms) {
-    brpc::ChannelOptions options;
-    options.protocol = "baidu_std";
-    options.timeout_ms = timeout_ms;
-    options.max_retry = 3;
-    if (channel_.Init(server_address.c_str(), &options) != 0) {
-        throw std::runtime_error(
-            "cannot initialize FileServer channel: " + server_address);
-    }
-}
+    std::int32_t timeout_ms)
+    : BrpcAvatarFileClient(
+          std::make_shared<infra::StaticEndpointResolver>(std::move(server_address)),
+          timeout_ms) {}
+
+BrpcAvatarFileClient::BrpcAvatarFileClient(
+    std::shared_ptr<infra::EndpointResolver> resolver,
+    std::int32_t timeout_ms)
+    : resolver_(std::move(resolver)), timeout_ms_(timeout_ms) {}
 
 bool BrpcAvatarFileClient::put(
     const std::string& request_id,
@@ -39,7 +39,9 @@ bool BrpcAvatarFileClient::put(
 
     ahwei_im::PutSingleFileRsp response;
     brpc::Controller controller;
-    ahwei_im::FileService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 3, error);
+    if (!channel) return false;
+    ahwei_im::FileService_Stub stub(channel.get());
     stub.PutSingleFile(&controller, &request, &response, nullptr);
     if (controller.Failed()) {
         error = controller.ErrorText();
@@ -79,7 +81,9 @@ bool BrpcAvatarFileClient::get_multi(
 
     ahwei_im::GetMultiFileRsp response;
     brpc::Controller controller;
-    ahwei_im::FileService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 3, error);
+    if (!channel) return false;
+    ahwei_im::FileService_Stub stub(channel.get());
     stub.GetMultiFile(&controller, &request, &response, nullptr);
     if (controller.Failed()) {
         error = controller.ErrorText();

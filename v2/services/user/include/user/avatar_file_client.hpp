@@ -1,9 +1,11 @@
 #pragma once
 
 #include <brpc/channel.h>
+#include "chat/infra/etcd.hpp"
 
 #include <cstdint>
 #include <string>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -28,6 +30,8 @@ public:
 class BrpcAvatarFileClient final : public AvatarFileClient {
 public:
     BrpcAvatarFileClient(std::string server_address, std::int32_t timeout_ms);
+    BrpcAvatarFileClient(std::shared_ptr<infra::EndpointResolver> resolver,
+        std::int32_t timeout_ms);
 
     bool put(
         const std::string& request_id,
@@ -41,7 +45,8 @@ public:
         std::string& error) override;
 
 private:
-    brpc::Channel channel_;
+    std::shared_ptr<infra::EndpointResolver> resolver_;
+    std::int32_t timeout_ms_;
 };
 
 }  // namespace chat::user

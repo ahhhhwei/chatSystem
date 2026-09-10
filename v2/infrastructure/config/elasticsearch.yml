@@ -1,0 +1,9 @@
+cluster.name: ahwei-chat-v2
+node.name: chat-localhost
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+network.host: 127.0.0.1
+http.port: 9200
+discovery.type: single-node
+xpack.security.enabled: false
+xpack.ml.enabled: false

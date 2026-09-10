@@ -2,6 +2,7 @@
 
 #include "message.pb.h"
 #include "user.pb.h"
+#include "chat/infra/brpc_resolver.hpp"
 
 #include <brpc/controller.h>
 
@@ -12,16 +13,15 @@ namespace chat::friend_service {
 
 BrpcUserDirectory::BrpcUserDirectory(
     std::string server_address,
-    std::int32_t timeout_ms) {
-    brpc::ChannelOptions options;
-    options.protocol = "baidu_std";
-    options.timeout_ms = timeout_ms;
-    options.max_retry = 3;
-    if (channel_.Init(server_address.c_str(), &options) != 0) {
-        throw std::runtime_error(
-            "cannot initialize UserServer channel: " + server_address);
-    }
-}
+    std::int32_t timeout_ms)
+    : BrpcUserDirectory(
+          std::make_shared<infra::StaticEndpointResolver>(std::move(server_address)),
+          timeout_ms) {}
+
+BrpcUserDirectory::BrpcUserDirectory(
+    std::shared_ptr<infra::EndpointResolver> resolver,
+    std::int32_t timeout_ms)
+    : resolver_(std::move(resolver)), timeout_ms_(timeout_ms) {}
 
 bool BrpcUserDirectory::get_multi(
     const std::string& request_id,
@@ -44,7 +44,9 @@ bool BrpcUserDirectory::get_multi(
     }
     ahwei_im::GetMultiUserInfoRsp response;
     brpc::Controller controller;
-    ahwei_im::UserService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 3, error);
+    if (!channel) return false;
+    ahwei_im::UserService_Stub stub(channel.get());
     stub.GetMultiUserInfo(&controller, &request, &response, nullptr);
     if (controller.Failed()) {
         error = controller.ErrorText();
@@ -85,7 +87,9 @@ bool BrpcUserDirectory::search(
 
     ahwei_im::SearchUsersRsp response;
     brpc::Controller controller;
-    ahwei_im::UserService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 3, error);
+    if (!channel) return false;
+    ahwei_im::UserService_Stub stub(channel.get());
     stub.SearchUsers(&controller, &request, &response, nullptr);
     if (controller.Failed()) {
         error = controller.ErrorText();
@@ -111,7 +115,9 @@ bool BrpcUserDirectory::resolve_session(
     request.set_session_id(session_id);
     ahwei_im::ResolveSessionRsp response;
     brpc::Controller controller;
-    ahwei_im::UserService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 3, error);
+    if (!channel) return false;
+    ahwei_im::UserService_Stub stub(channel.get());
     stub.ResolveSession(&controller, &request, &response, nullptr);
     if (controller.Failed()) {
         error = controller.ErrorText();
@@ -131,17 +137,15 @@ bool BrpcUserDirectory::resolve_session(
 
 BrpcRecentMessageClient::BrpcRecentMessageClient(
     std::string server_address,
-    std::int32_t timeout_ms) {
-    brpc::ChannelOptions options;
-    options.protocol = "baidu_std";
-    options.timeout_ms = timeout_ms;
-    options.max_retry = 3;
-    if (channel_.Init(server_address.c_str(), &options) != 0) {
-        throw std::runtime_error(
-            "cannot initialize MessageStoreServer channel: " +
-            server_address);
-    }
-}
+    std::int32_t timeout_ms)
+    : BrpcRecentMessageClient(
+          std::make_shared<infra::StaticEndpointResolver>(std::move(server_address)),
+          timeout_ms) {}
+
+BrpcRecentMessageClient::BrpcRecentMessageClient(
+    std::shared_ptr<infra::EndpointResolver> resolver,
+    std::int32_t timeout_ms)
+    : resolver_(std::move(resolver)), timeout_ms_(timeout_ms) {}
 
 bool BrpcRecentMessageClient::latest(
     const std::string& request_id,
@@ -156,7 +160,9 @@ bool BrpcRecentMessageClient::latest(
     request.set_msg_count(1);
     ahwei_im::GetRecentMsgRsp response;
     brpc::Controller controller;
-    ahwei_im::MsgStorageService_Stub stub(&channel_);
+    auto channel = infra::make_brpc_channel(resolver_, timeout_ms_, 3, error);
+    if (!channel) return false;
+    ahwei_im::MsgStorageService_Stub stub(channel.get());
     stub.GetRecentMsg(&controller, &request, &response, nullptr);
     if (controller.Failed()) {
         error = controller.ErrorText();

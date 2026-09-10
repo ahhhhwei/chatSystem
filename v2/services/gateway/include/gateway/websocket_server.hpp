@@ -25,6 +25,10 @@ public:
         std::string& session_id,
         std::string& error)>;
     using DisconnectHandler = std::function<void(const std::string& session_id)>;
+    using PresenceHandler = std::function<void(
+        const std::string& user_id,
+        const std::string& session_id,
+        bool online)>;
 
     WebSocketServer(
         std::string listen_address,
@@ -37,6 +41,7 @@ public:
 
     void set_authenticator(Authenticator authenticator);
     void set_disconnect_handler(DisconnectHandler handler);
+    void set_presence_handler(PresenceHandler handler);
 
     bool start(std::string& error);
     void stop();
@@ -82,6 +87,7 @@ private:
     mutable std::mutex callbacks_mutex_;
     Authenticator authenticator_;
     DisconnectHandler disconnect_handler_;
+    PresenceHandler presence_handler_;
 
     mutable std::mutex connections_mutex_;
     std::unordered_map<int, std::shared_ptr<Connection>> connections_;

@@ -55,12 +55,13 @@ public:
         std::chrono::seconds ttl = std::chrono::minutes(5),
         CodeGenerator code_generator = {},
         Clock clock = {});
+    virtual ~VerificationCodeManager() = default;
 
-    bool issue(
+    virtual bool issue(
         const std::string& phone,
         std::string& code_id,
         std::string& error);
-    bool consume(
+    virtual bool consume(
         const std::string& phone,
         const std::string& code_id,
         const std::string& code,
@@ -90,16 +91,17 @@ public:
     explicit SessionManager(
         std::chrono::seconds ttl = std::chrono::hours(24),
         Clock clock = {});
+    virtual ~SessionManager() = default;
 
-    bool login(
+    virtual bool login(
         const std::string& user_id,
         std::string& session_id,
         std::string& error);
-    bool resolve(
+    virtual bool resolve(
         const std::string& session_id,
         std::string& user_id,
         std::string& error);
-    bool revoke(const std::string& session_id, std::string& error);
+    virtual bool revoke(const std::string& session_id, std::string& error);
 
 private:
     struct Entry {

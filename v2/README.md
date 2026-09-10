@@ -3,6 +3,9 @@
 V2 按原课件的方式开发：每个微服务先独立实现、独立测试，最后通过 Gateway 联调。
 V2 Qt 桌面端已经直接对接 Gateway，不再依赖 V1 客户端。
 
+V1 的 MySQL、Redis、etcd、RabbitMQ 和 Elasticsearch 基础设施兼容模式
+已经接入。安装、启动和验证见 [V1 基础设施兼容模式](docs/V1_INFRASTRUCTURE.md)。
+
 ## 开发顺序
 
 ```text

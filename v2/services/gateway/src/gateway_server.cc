@@ -104,7 +104,8 @@ private:
 
 GatewayServer::GatewayServer(
     GatewayOptions options,
-    std::shared_ptr<RpcClient> rpc_client)
+    std::shared_ptr<RpcClient> rpc_client,
+    std::shared_ptr<infra::RedisClient> presence_redis)
     : options_(std::move(options)),
       websocket_(std::make_shared<WebSocketServer>(
           options_.listen_address,
@@ -138,6 +139,27 @@ GatewayServer::GatewayServer(
                 core->revoke_session(session_id);
             }
         });
+    if (presence_redis) {
+        websocket_->set_presence_handler(
+            [redis = std::move(presence_redis)](
+                const std::string& user_id,
+                const std::string& session_id,
+                bool online) {
+                std::string error;
+                const std::string key = redis->key("online:" + user_id);
+                if (online) {
+                    if (!redis->set_ex(key, session_id, 7 * 24 * 60 * 60, error))
+                        spdlog::warn("cannot record Redis online state: {}", error);
+                    return;
+                }
+                static const std::string script =
+                    "if redis.call('GET',KEYS[1])==ARGV[1] then "
+                    "return redis.call('DEL',KEYS[1]) end return 0";
+                std::optional<std::string> ignored;
+                if (!redis->eval(script, {key}, {session_id}, ignored, error))
+                    spdlog::warn("cannot clear Redis online state: {}", error);
+            });
+    }
 }
 
 GatewayServer::~GatewayServer() {

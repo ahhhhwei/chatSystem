@@ -6,6 +6,7 @@ target_link_libraries(gateway_rpc_client
     PUBLIC
         chat_brpc
         chat_contracts
+        chat_infrastructure
 )
 
 add_library(gateway_core

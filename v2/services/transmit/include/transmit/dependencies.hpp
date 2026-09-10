@@ -1,11 +1,14 @@
 #pragma once
 
 #include "base.pb.h"
+#include "chat/infra/rabbitmq.hpp"
+#include "chat/infra/etcd.hpp"
 
 #include <brpc/channel.h>
 
 #include <cstdint>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -57,6 +60,8 @@ public:
 class BrpcUserClient final : public UserClient {
 public:
     BrpcUserClient(std::string server_address, std::int32_t timeout_ms);
+    BrpcUserClient(std::shared_ptr<infra::EndpointResolver> resolver,
+        std::int32_t timeout_ms);
 
     bool get_user(
         const std::string& request_id,
@@ -65,7 +70,8 @@ public:
         std::string& error) override;
 
 private:
-    brpc::Channel channel_;
+    std::shared_ptr<infra::EndpointResolver> resolver_;
+    std::int32_t timeout_ms_;
 };
 
 // 每行一组会话成员：<chat_session_id> <user_id>。
@@ -93,6 +99,9 @@ public:
     BrpcFriendSessionMemberRepository(
         std::string server_address,
         std::int32_t timeout_ms);
+    BrpcFriendSessionMemberRepository(
+        std::shared_ptr<infra::EndpointResolver> resolver,
+        std::int32_t timeout_ms);
 
     bool members(
         const std::string& chat_session_id,
@@ -100,7 +109,8 @@ public:
         std::string& error) const override;
 
 private:
-    mutable brpc::Channel channel_;
+    std::shared_ptr<infra::EndpointResolver> resolver_;
+    std::int32_t timeout_ms_;
 };
 
 // 当前阶段直接调用 MessageStoreServer 投递消息。后续仅需把
@@ -110,6 +120,8 @@ public:
     BrpcMessagePublisher(
         std::string server_address,
         std::int32_t timeout_ms);
+    BrpcMessagePublisher(std::shared_ptr<infra::EndpointResolver> resolver,
+        std::int32_t timeout_ms);
 
     bool publish(
         const std::string& request_id,
@@ -117,7 +129,20 @@ public:
         std::string& error) override;
 
 private:
-    brpc::Channel channel_;
+    std::shared_ptr<infra::EndpointResolver> resolver_;
+    std::int32_t timeout_ms_;
+};
+
+class RabbitMqMessagePublisher final : public MessagePublisher {
+public:
+    explicit RabbitMqMessagePublisher(infra::RabbitMqConfig config);
+
+    bool publish(const std::string& request_id,
+        const ahwei_im::MessageInfo& message,
+        std::string& error) override;
+
+private:
+    infra::RabbitMqPublisher publisher_;
 };
 
 }  // namespace chat::transmit

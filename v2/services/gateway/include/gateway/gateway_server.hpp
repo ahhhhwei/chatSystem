@@ -3,6 +3,7 @@
 #include "gateway/gateway_core.hpp"
 #include "gateway/rpc_client.hpp"
 #include "gateway/websocket_server.hpp"
+#include "chat/infra/redis.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -23,7 +24,8 @@ class GatewayServer final {
 public:
     GatewayServer(
         GatewayOptions options,
-        std::shared_ptr<RpcClient> rpc_client);
+        std::shared_ptr<RpcClient> rpc_client,
+        std::shared_ptr<infra::RedisClient> presence_redis = nullptr);
     ~GatewayServer();
 
     GatewayServer(const GatewayServer&) = delete;
