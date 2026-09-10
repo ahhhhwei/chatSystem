@@ -39,6 +39,12 @@ public:
         ahwei_im::MsgSearchRsp* response,
         google::protobuf::Closure* done) override;
 
+    void StoreMessage(
+        google::protobuf::RpcController* controller,
+        const ahwei_im::StoreMessageReq* request,
+        ahwei_im::StoreMessageRsp* response,
+        google::protobuf::Closure* done) override;
+
 private:
     bool hydrate_file_contents(
         const std::string& request_id,

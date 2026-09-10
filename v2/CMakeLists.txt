@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(chat_system_v2 LANGUAGES CXX)
 
+option(BUILD_QT_CLIENT "Build the Qt desktop client" ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -26,7 +28,15 @@ protobuf_generate_cpp(
     CHAT_PROTO_HEADERS
     contracts/base.proto
     contracts/file.proto
+    contracts/friend.proto
+    contracts/friend_storage.proto
+    contracts/gateway.proto
     contracts/message.proto
+    contracts/notify.proto
+    contracts/speech.proto
+    contracts/transmit.proto
+    contracts/user.proto
+    contracts/user_storage.proto
 )
 
 add_library(chat_contracts
@@ -55,3 +65,11 @@ include(CTest)
 
 add_subdirectory(services/file)
 add_subdirectory(services/message)
+add_subdirectory(services/user)
+add_subdirectory(services/friend)
+add_subdirectory(services/transmit)
+add_subdirectory(services/gateway)
+
+if(BUILD_QT_CLIENT)
+    add_subdirectory(client/qt)
+endif()

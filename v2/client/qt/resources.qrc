@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/chat">
+        <file alias="logo.png">../../../v1/code/client/ChatClient/resource/image/logo.png</file>
+        <file alias="default-avatar.png">../../../v1/code/client/ChatClient/resource/image/defaultAvatar.png</file>
+        <file alias="group-avatar.png">../../../v1/code/client/ChatClient/resource/image/groupAvatar.png</file>
+        <file alias="file.png">../../../v1/code/client/ChatClient/resource/image/file.png</file>
+        <file alias="image.png">../../../v1/code/client/ChatClient/resource/image/image.png</file>
+    </qresource>
+</RCC>

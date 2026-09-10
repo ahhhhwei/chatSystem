@@ -1,0 +1,211 @@
+syntax = "proto3";
+
+package ahwei_im;
+
+import "base.proto";
+
+option cc_generic_services = true;
+
+message UserRegisterReq {
+    string request_id = 1;
+    string nickname = 2;
+    string password = 3;
+    string verify_code_id = 4;
+    string verify_code = 5;
+}
+
+message UserRegisterRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+}
+
+message UserLoginReq {
+    string request_id = 1;
+    string nickname = 2;
+    string password = 3;
+    string verify_code_id = 4;
+    string verify_code = 5;
+}
+
+message UserLoginRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+    string login_session_id = 4;
+}
+
+message PhoneVerifyCodeReq {
+    string request_id = 1;
+    string phone_number = 2;
+}
+
+message PhoneVerifyCodeRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+    string verify_code_id = 4;
+}
+
+message PhoneRegisterReq {
+    string request_id = 1;
+    string phone_number = 2;
+    string verify_code_id = 3;
+    string verify_code = 4;
+}
+
+message PhoneRegisterRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+}
+
+message PhoneLoginReq {
+    string request_id = 1;
+    string phone_number = 2;
+    string verify_code_id = 3;
+    string verify_code = 4;
+}
+
+message PhoneLoginRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+    string login_session_id = 4;
+}
+
+message GetUserInfoReq {
+    string request_id = 1;
+    string user_id = 2;
+    string session_id = 3;
+}
+
+message GetUserInfoRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+    UserInfo user_info = 4;
+}
+
+message GetMultiUserInfoReq {
+    string request_id = 1;
+    repeated string users_id = 2;
+}
+
+message GetMultiUserInfoRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+    map<string, UserInfo> users_info = 4;
+}
+
+message SetUserAvatarReq {
+    string request_id = 1;
+    string user_id = 2;
+    string session_id = 3;
+    bytes avatar = 4;
+}
+
+message SetUserAvatarRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+}
+
+message SetUserNicknameReq {
+    string request_id = 1;
+    string user_id = 2;
+    string session_id = 3;
+    string nickname = 4;
+}
+
+message SetUserNicknameRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+}
+
+message SetUserDescriptionReq {
+    string request_id = 1;
+    string user_id = 2;
+    string session_id = 3;
+    string description = 4;
+}
+
+message SetUserDescriptionRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+}
+
+message SetUserPhoneNumberReq {
+    string request_id = 1;
+    string user_id = 2;
+    string session_id = 3;
+    string phone_number = 4;
+    string phone_verify_code_id = 5;
+    string phone_verify_code = 6;
+}
+
+message SetUserPhoneNumberRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+}
+
+// v1 由 Gateway 直接读取 Redis 会话。v2 将这两项做成内部 RPC，
+// 后续 Gateway 不需要和 UserServer 共享进程内状态。
+message ResolveSessionReq {
+    string request_id = 1;
+    string session_id = 2;
+}
+
+message ResolveSessionRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+    string user_id = 4;
+}
+
+message RevokeSessionReq {
+    string request_id = 1;
+    string session_id = 2;
+}
+
+message RevokeSessionRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+}
+
+// FriendServer 使用的内部用户搜索接口。
+message SearchUsersReq {
+    string request_id = 1;
+    string search_key = 2;
+    repeated string exclude_user_ids = 3;
+    uint32 limit = 4;
+}
+
+message SearchUsersRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+    repeated UserInfo users = 4;
+}
+
+service UserService {
+    rpc UserRegister(UserRegisterReq) returns (UserRegisterRsp);
+    rpc UserLogin(UserLoginReq) returns (UserLoginRsp);
+    rpc GetPhoneVerifyCode(PhoneVerifyCodeReq) returns (PhoneVerifyCodeRsp);
+    rpc PhoneRegister(PhoneRegisterReq) returns (PhoneRegisterRsp);
+    rpc PhoneLogin(PhoneLoginReq) returns (PhoneLoginRsp);
+    rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoRsp);
+    rpc GetMultiUserInfo(GetMultiUserInfoReq) returns (GetMultiUserInfoRsp);
+    rpc SetUserAvatar(SetUserAvatarReq) returns (SetUserAvatarRsp);
+    rpc SetUserNickname(SetUserNicknameReq) returns (SetUserNicknameRsp);
+    rpc SetUserDescription(SetUserDescriptionReq) returns (SetUserDescriptionRsp);
+    rpc SetUserPhoneNumber(SetUserPhoneNumberReq) returns (SetUserPhoneNumberRsp);
+    rpc ResolveSession(ResolveSessionReq) returns (ResolveSessionRsp);
+    rpc RevokeSession(RevokeSessionReq) returns (RevokeSessionRsp);
+    rpc SearchUsers(SearchUsersReq) returns (SearchUsersRsp);
+}

@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package ahwei_im;
+
+import "base.proto";
+
+option cc_generic_services = true;
+
+enum NotifyType {
+    FRIEND_ADD_APPLY_NOTIFY = 0;
+    FRIEND_ADD_PROCESS_NOTIFY = 1;
+    CHAT_SESSION_CREATE_NOTIFY = 2;
+    CHAT_MESSAGE_NOTIFY = 3;
+    FRIEND_REMOVE_NOTIFY = 4;
+}
+
+message NotifyFriendAddApply {
+    UserInfo user_info = 1;
+}
+
+message NotifyFriendAddProcess {
+    bool agree = 1;
+    UserInfo user_info = 2;
+}
+
+message NotifyFriendRemove {
+    string user_id = 1;
+}
+
+message NotifyNewChatSession {
+    ChatSessionInfo chat_session_info = 1;
+}
+
+message NotifyNewMessage {
+    MessageInfo message_info = 1;
+}
+
+message NotifyMessage {
+    string notify_event_id = 1;
+    NotifyType notify_type = 2;
+    oneof notify_remarks {
+        NotifyFriendAddApply friend_add_apply = 3;
+        NotifyFriendAddProcess friend_process_result = 4;
+        NotifyNewChatSession new_chat_session_info = 5;
+        NotifyNewMessage new_message_info = 6;
+        NotifyFriendRemove friend_remove = 7;
+    }
+}

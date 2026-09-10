@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package ahwei_im.internal;
+
+message FriendRelation {
+    string first_user_id = 1;
+    string second_user_id = 2;
+}
+
+message FriendApplication {
+    string event_id = 1;
+    string applicant_id = 2;
+    string respondent_id = 3;
+}
+
+enum StoredChatSessionType {
+    UNKNOWN_SESSION = 0;
+    SINGLE_SESSION = 1;
+    GROUP_SESSION = 2;
+}
+
+message StoredChatSession {
+    string chat_session_id = 1;
+    string chat_session_name = 2;
+    StoredChatSessionType type = 3;
+    repeated string member_ids = 4;
+}
+
+// 每次事务写入一个完整状态，revision 保证空状态也能被序列化。
+message FriendState {
+    uint64 revision = 1;
+    repeated FriendRelation relations = 2;
+    repeated FriendApplication applications = 3;
+    repeated StoredChatSession sessions = 4;
+}

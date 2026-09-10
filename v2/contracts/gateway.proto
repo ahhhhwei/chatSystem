@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package ahwei_im;
+
+option cc_generic_services = true;
+
+// WebSocket 建连后的第一条二进制消息。Gateway 用 session_id 识别客户端。
+message ClientAuthenticationReq {
+    string request_id = 1;
+    string session_id = 2;
+}

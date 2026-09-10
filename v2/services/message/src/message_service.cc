@@ -51,6 +51,7 @@ MessageServiceImpl::MessageServiceImpl(
     }
 }
 
+// 保存消息
 bool MessageServiceImpl::store_message(
     ahwei_im::MessageInfo message,
     std::string& error) {
@@ -141,6 +142,7 @@ bool MessageServiceImpl::store_message(
     return true;
 }
 
+// 接收一段原始二进制数据，然后解析成messageInfo，再交给store_message()
 bool MessageServiceImpl::on_message(
     const void* data,
     std::size_t size,
@@ -239,6 +241,28 @@ void MessageServiceImpl::MsgSearch(
         request->chat_session_id(),
         request->search_key());
     set_messages(response, request->request_id(), std::move(messages));
+}
+
+void MessageServiceImpl::StoreMessage(
+    google::protobuf::RpcController*,
+    const ahwei_im::StoreMessageReq* request,
+    ahwei_im::StoreMessageRsp* response,
+    google::protobuf::Closure* done) {
+    brpc::ClosureGuard guard(done);
+    response->set_request_id(request->request_id());
+    if (!request->has_message()) {
+        response->set_success(false);
+        response->set_errmsg("message cannot be empty");
+        return;
+    }
+
+    std::string error;
+    if (!store_message(request->message(), error)) {
+        response->set_success(false);
+        response->set_errmsg(error);
+        return;
+    }
+    response->set_success(true);
 }
 
 bool MessageServiceImpl::hydrate_file_contents(

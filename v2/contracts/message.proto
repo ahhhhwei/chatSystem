@@ -54,8 +54,23 @@ message MsgSearchRsp {
     repeated MessageInfo msg_list = 4;
 }
 
+// V2 独立联调时使用的内部投递接口。
+// 后续接入 RabbitMQ 后，MessageTransmitServer 可以换用 MQ publisher，
+// 对外的消息查询协议不受影响。
+message StoreMessageReq {
+    string request_id = 1;
+    MessageInfo message = 2;
+}
+
+message StoreMessageRsp {
+    string request_id = 1;
+    bool success = 2;
+    string errmsg = 3;
+}
+
 service MsgStorageService {
     rpc GetHistoryMsg(GetHistoryMsgReq) returns (GetHistoryMsgRsp);
     rpc GetRecentMsg(GetRecentMsgReq) returns (GetRecentMsgRsp);
     rpc MsgSearch(MsgSearchReq) returns (MsgSearchRsp);
+    rpc StoreMessage(StoreMessageReq) returns (StoreMessageRsp);
 }
