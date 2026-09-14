@@ -1,7 +1,8 @@
 # chatSystem V2
 
 V2 按原课件的方式开发：每个微服务先独立实现、独立测试，最后通过 Gateway 联调。
-V2 Qt 桌面端已经直接对接 Gateway，不再依赖 V1 客户端。
+V2 拥有自己的协议、服务代码、第三方头文件和 Qt 图片资源；配置、构建和运行均不
+访问 V1 目录，可以把 `v2/` 单独复制出去使用。
 
 V1 的 MySQL、Redis、etcd、RabbitMQ 和 Elasticsearch 基础设施兼容模式
 已经接入。安装、启动和验证见 [V1 基础设施兼容模式](docs/V1_INFRASTRUCTURE.md)。
@@ -491,7 +492,8 @@ Gateway 的核心转发和通知组合逻辑与 HTTP/WebSocket 真实传输层�
 ## 已完成：Qt 桌面端
 
 Qt 客户端使用 Qt 5.12 Widgets 开发，保持 V1 的 Protobuf + HTTP/WebSocket
-通信方式，并直接复用 V1 的图片资源。已经实现：
+通信方式。客户端图片已收录在 `client/qt/resources/images/`，构建时只读取 V2
+内部文件。已经实现：
 
 - 用户名和手机号注册、登录；
 - 个人资料查看与头像、昵称、签名、手机号修改；
@@ -566,7 +568,7 @@ QT_QPA_PLATFORM=offscreen ./v2/build/client/qt/chat_desktop --ui-smoke
 - spdlog
 - GoogleTest
 - OpenSSL（WebSocket 握手）
-- cpp-httplib（仓库已有的单头文件）
+- cpp-httplib 0.16.0（V2 自带于 `third_party/cpp-httplib/`）
 - Qt 5.12 Widgets、Network、WebSockets（桌面端）
 
 构建环境已经安装完成。后续服务用到 Redis、RabbitMQ、MySQL、Elasticsearch、etcd 时再逐项增加，不提前把所有中间件混在一起。

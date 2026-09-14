@@ -26,11 +26,12 @@ add_library(gateway_transport
 )
 target_include_directories(gateway_transport
     PUBLIC include
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../../v1/code/server/third/include"
 )
 target_link_libraries(gateway_transport
     PUBLIC
         gateway_core
+    PRIVATE
+        chat_httplib
         OpenSSL::Crypto
         Threads::Threads
         spdlog::spdlog
@@ -52,12 +53,11 @@ add_executable(gateway_client
     src/websocket_client.cc
 )
 target_include_directories(gateway_client
-    PRIVATE
-        include
-        "${CMAKE_CURRENT_SOURCE_DIR}/../../../v1/code/server/third/include"
+    PRIVATE include
 )
 target_link_libraries(gateway_client
     PRIVATE
+        chat_httplib
         chat_contracts
         Threads::Threads
         ${GFLAGS_LIBRARY}
@@ -80,11 +80,9 @@ gtest_discover_tests(gateway_core_test)
 add_executable(gateway_transport_test
     test/gateway_transport_test.cc
 )
-target_include_directories(gateway_transport_test
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../../v1/code/server/third/include"
-)
 target_link_libraries(gateway_transport_test
     PRIVATE
+        chat_httplib
         gateway_transport
         GTest::GTest
         GTest::Main

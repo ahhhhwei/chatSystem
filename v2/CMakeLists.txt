@@ -23,6 +23,11 @@ find_library(GFLAGS_LIBRARY NAMES gflags REQUIRED)
 find_library(LEVELDB_LIBRARY NAMES leveldb REQUIRED)
 find_library(PROTOC_LIBRARY NAMES protoc REQUIRED)
 
+add_library(chat_httplib INTERFACE)
+target_include_directories(chat_httplib SYSTEM INTERFACE
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cpp-httplib"
+)
+
 set(Protobuf_IMPORT_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/contracts")
 protobuf_generate_cpp(
     CHAT_PROTO_SOURCES
