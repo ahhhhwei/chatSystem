@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package ahwei_im.internal;
+
+// 只用于 UserStore 的磁盘快照，不通过 UserService 对外传输。
+message UserRecord {
+    string user_id = 1;
+    string nickname = 2;
+    string description = 3;
+    string phone = 4;
+    string avatar_file_id = 5;
+    bytes password_salt = 6;
+    bytes password_hash = 7;
+    uint32 password_iterations = 8;
+}

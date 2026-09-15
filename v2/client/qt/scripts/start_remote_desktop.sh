@@ -97,7 +97,7 @@ fi
 start_background chat_desktop "chat_desktop" \
     env DISPLAY="${display_id}" QT_X11_NO_MITSHM=1 "${client_binary}" "$@"
 
-echo "Ahwei Chat 已启动在 ${display_id}（${screen_spec}）"
+echo "聊天客户端已启动在 ${display_id}（${screen_spec}）"
 echo "VNC 只监听服务器本机 127.0.0.1:${vnc_port}"
 echo "本地建立隧道：ssh -L ${vnc_port}:127.0.0.1:${vnc_port} <服务器用户>@<服务器地址>"
 echo "然后用 VNC Viewer 打开 127.0.0.1:${vnc_port}"

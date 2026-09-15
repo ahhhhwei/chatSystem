@@ -35,7 +35,6 @@
 #include <QPlainTextEdit>
 #include <QPointer>
 #include <QPushButton>
-#include <QSettings>
 #include <QShortcut>
 #include <QSizePolicy>
 #include <QSizeGrip>
@@ -326,12 +325,8 @@ AppWindow::AppWindow(
     apply_style();
     wire_network_events();
 
-    QSettings settings;
-    http_url_edit_->setText(settings.value(
-        QStringLiteral("gateway/http"), initial_http_url.toString()).toString());
-    websocket_url_edit_->setText(settings.value(
-        QStringLiteral("gateway/websocket"),
-        initial_websocket_url.toString()).toString());
+    http_url_edit_->setText(initial_http_url.toString());
+    websocket_url_edit_->setText(initial_websocket_url.toString());
     pages_->setCurrentWidget(login_page_);
 }
 
@@ -836,9 +831,6 @@ bool AppWindow::configure_endpoints() {
         return false;
     }
     gateway_.configure(http, websocket);
-    QSettings settings;
-    settings.setValue(QStringLiteral("gateway/http"), http.toString());
-    settings.setValue(QStringLiteral("gateway/websocket"), websocket.toString());
     return true;
 }
 

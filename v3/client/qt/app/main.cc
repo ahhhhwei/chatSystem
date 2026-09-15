@@ -3,7 +3,10 @@
 #include <QApplication>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
+#include <QCoreApplication>
+#include <QDir>
 #include <QFont>
+#include <QSettings>
 #include <QTimer>
 
 int main(int argc, char* argv[]) {
@@ -18,16 +21,27 @@ int main(int argc, char* argv[]) {
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("桌面聊天客户端"));
     parser.addHelpOption();
+
+    const QString config_path = QDir(QCoreApplication::applicationDirPath())
+                                    .filePath(QStringLiteral("server.ini"));
+    QSettings server_config(config_path, QSettings::IniFormat);
+    const QString default_http_url = server_config.value(
+        QStringLiteral("server/http_url"),
+        QStringLiteral("http://127.0.0.1:9000")).toString();
+    const QString default_websocket_url = server_config.value(
+        QStringLiteral("server/ws_url"),
+        QStringLiteral("ws://127.0.0.1:9001")).toString();
+
     QCommandLineOption http_option(
         QStringLiteral("http-url"),
         QStringLiteral("消息服务地址"),
         QStringLiteral("url"),
-        QStringLiteral("http://127.0.0.1:9000"));
+        default_http_url);
     QCommandLineOption websocket_option(
         QStringLiteral("ws-url"),
         QStringLiteral("实时消息服务地址"),
         QStringLiteral("url"),
-        QStringLiteral("ws://127.0.0.1:9001"));
+        default_websocket_url);
     QCommandLineOption smoke_option(
         QStringLiteral("ui-smoke"),
         QStringLiteral("Construct the UI offscreen and exit"));
